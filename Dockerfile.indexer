@@ -17,6 +17,5 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 RUN pnpm build:config
-RUN cd apps/hyperindex && pnpm codegen
 
-CMD ["sh", "-c", "pnpm tsx apps/hyperindex/scripts/generate-config.ts && cd apps/hyperindex && TUI_OFF=true envio start"]
+CMD ["sh", "-c", "pnpm tsx apps/hyperindex/scripts/generate-config.ts && cd apps/hyperindex && pnpm codegen && TUI_OFF=true envio start"]
