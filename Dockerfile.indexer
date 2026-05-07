@@ -18,4 +18,4 @@ COPY . .
 
 RUN pnpm build:config
 
-CMD ["sh", "-c", "pnpm tsx apps/hyperindex/scripts/generate-config.ts && cd apps/hyperindex && pnpm codegen && TUI_OFF=true envio start"]
+CMD ["sh", "-c", "npx tsx apps/hyperindex/scripts/generate-config.ts && cd apps/hyperindex && npx envio codegen && TUI_OFF=true npx envio start"]

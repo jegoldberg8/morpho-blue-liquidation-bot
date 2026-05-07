@@ -19,4 +19,4 @@ COPY . .
 
 RUN pnpm build
 
-CMD ["node", "node_modules/.bin/tsx", "apps/client/src/script.ts", "--env-file=.env"]
+CMD ["npx", "tsx", "apps/client/src/script.ts", "--env-file=.env"]
