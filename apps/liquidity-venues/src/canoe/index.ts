@@ -8,47 +8,13 @@ import { ToConvert } from "../types";
 
 import { CanoeSwapQuoteResponse } from "./types";
 
-interface MarketOverviewStatus {
-  name: string;
-  active: boolean;
-  report?: { chains: string[] };
-}
+const MARKETS_BY_CHAIN: Record<string, string[]> = {
+  hyperevm: ["enso", "icecreamswap", "kyberswap", "openocean", "usor", "zeroex"],
+  worldchain: ["enso", "icecreamswap", "usor", "zeroex"],
+  etherlink: ["kyberswap", "threeroute", "usor"],
+};
 
 export class CanoeVenue implements LiquidityVenue {
-  private marketsByChain: Record<string, string[]> = {};
-  private initPromise: Promise<void> | null = null;
-
-  private init() {
-    if (!this.initPromise) {
-      this.initPromise = this.fetchMarketOverview();
-    }
-    return this.initPromise;
-  }
-
-  private async fetchMarketOverview() {
-    try {
-      const response = await fetch(`${CANOE_BASE_URL}/market/overview`);
-      if (!response.ok) throw new Error(`overview: ${response.status}`);
-
-      const data = (await response.json()) as { status: MarketOverviewStatus[] };
-
-      for (const market of data.status) {
-        if (!market.active || !market.report?.chains) continue;
-        for (const chain of market.report.chains) {
-          this.marketsByChain[chain] ??= [];
-          this.marketsByChain[chain].push(market.name);
-        }
-      }
-
-      console.log(
-        `Canoe: loaded ${data.status.filter((m) => m.active).length} markets for ${Object.keys(this.marketsByChain).length} chains`,
-      );
-    } catch (error) {
-      console.error("Canoe: failed to fetch market overview", error);
-      this.initPromise = null; // allow retry on failure
-    }
-  }
-
   supportsRoute(encoder: ExecutorEncoder, src: Address, dst: Address) {
     if (src === dst) return false;
     return encoder.client.chain.id in CANOE_CHAIN_NAMES;
@@ -58,13 +24,11 @@ export class CanoeVenue implements LiquidityVenue {
     const { src, dst, srcAmount } = toConvert;
 
     try {
-      await this.init();
-
       const chainId = encoder.client.chain.id;
       const chainName = CANOE_CHAIN_NAMES[chainId];
       if (!chainName) return toConvert;
 
-      const markets = this.marketsByChain[chainName];
+      const markets = MARKETS_BY_CHAIN[chainName];
       if (!markets || markets.length === 0) return toConvert;
 
       const srcDecimals = await this.getAssetsDecimals(encoder.client, src);
