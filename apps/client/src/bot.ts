@@ -12,6 +12,7 @@ import {
 } from "@morpho-org/blue-sdk";
 import { executorAbi } from "executooor-viem";
 import {
+  encodeFunctionData,
   erc20Abi,
   formatUnits,
   getAddress,
@@ -26,6 +27,7 @@ import {
   type WalletClient,
 } from "viem";
 import {
+  estimateGas,
   getBlockNumber,
   getGasPrice,
   readContract,
@@ -41,13 +43,14 @@ import { fetchWhitelistedVaults } from "./utils/fetch-whitelisted-vaults.js";
 import { Flashbots } from "./utils/flashbots.js";
 import { LiquidationEncoder } from "./utils/LiquidationEncoder.js";
 import { DEFAULT_LIQUIDATION_BUFFER_BPS, WAD, wMulDown } from "./utils/maths.js";
+import { sendTelegramAlert } from "./utils/telegram.js";
 
 export interface LiquidationBotInputs {
   logTag: string;
   chainId: number;
   client: WalletClient<Transport, Chain, Account>;
   wNative: Address;
-  vaultWhitelist: Address[] | "morpho-api";
+  vaultWhitelist: Address[] | "morpho-api" | "all";
   additionalMarketsWhitelist: Hex[];
   executorAddress: Address;
   treasuryAddress: Address;
@@ -58,6 +61,8 @@ export interface LiquidationBotInputs {
   positionLiquidationCooldownMechanism?: PositionLiquidationCooldownMechanism;
   marketsFetchingCooldownMechanism: MarketsFetchingCooldownMechanism;
   flashbotAccount?: LocalAccount;
+  skipSimulation?: boolean;
+  minCollateralUsd?: number;
 }
 
 export class LiquidationBot {
@@ -66,7 +71,7 @@ export class LiquidationBot {
   private client: WalletClient<Transport, Chain, Account>;
   private chainAddresses: ChainAddresses;
   private wNative: Address;
-  private vaultWhitelist: Address[] | "morpho-api";
+  private vaultWhitelist: Address[] | "morpho-api" | "all";
   private additionalMarketsWhitelist: Hex[];
   private executorAddress: Address;
   private treasuryAddress: Address;
@@ -78,6 +83,9 @@ export class LiquidationBot {
   private flashbotAccount?: LocalAccount;
   private coveredMarkets: Hex[];
   private alwaysRealizeBadDebt: boolean;
+  private skipSimulation: boolean;
+  private minCollateralUsd: number;
+  private decimalsCache: Record<string, number> = {};
 
   constructor(inputs: LiquidationBotInputs) {
     this.logTag = inputs.logTag;
@@ -97,6 +105,8 @@ export class LiquidationBot {
     this.flashbotAccount = inputs.flashbotAccount;
     this.coveredMarkets = [];
     this.alwaysRealizeBadDebt = inputs.alwaysRealizeBadDebt;
+    this.skipSimulation = inputs.skipSimulation ?? false;
+    this.minCollateralUsd = inputs.minCollateralUsd ?? 0;
   }
 
   async run() {
@@ -116,20 +126,27 @@ export class LiquidationBot {
     const seizableCollateral = position.seizableCollateral ?? 0n;
     const badDebtPosition = seizableCollateral === position.collateral;
 
-    if (!this.checkCooldown(MarketUtils.getMarketId(marketParams), position.user)) return;
+    const marketId = MarketUtils.getMarketId(marketParams);
+
+    if (!this.checkCooldown(marketId, position.user)) return;
+
+    // Skip dust positions
+    if (this.minCollateralUsd > 0 && this.pricers && this.pricers.length > 0) {
+      const collateralUsd = await this.price(
+        marketParams.collateralToken,
+        seizableCollateral,
+        this.pricers,
+      );
+      if (collateralUsd !== undefined && collateralUsd < this.minCollateralUsd) return;
+    }
+
+    const reducedCollateral = this.decreaseSeizableCollateral(seizableCollateral, badDebtPosition);
 
     const { client, executorAddress } = this;
 
     const encoder = new LiquidationEncoder(executorAddress, client);
 
-    if (
-      !(await this.convertCollateralToLoan(
-        marketParams,
-        this.decreaseSeizableCollateral(seizableCollateral, badDebtPosition),
-        encoder,
-      ))
-    )
-      return;
+    if (!(await this.convertCollateralToLoan(marketParams, reducedCollateral, encoder))) return;
 
     encoder.erc20Approve(marketParams.loanToken, this.chainAddresses.morpho, maxUint256);
 
@@ -154,19 +171,17 @@ export class LiquidationBot {
     try {
       const success = await this.handleTx(encoder, calls, marketParams, badDebtPosition);
 
-      if (success)
-        console.log(
-          `${this.logTag}Liquidated ${position.user} on ${MarketUtils.getMarketId(marketParams)}`,
-        );
-      else
-        console.log(
-          `${this.logTag}ℹ️ Skipped ${position.user} on ${MarketUtils.getMarketId(marketParams)} (not profitable)`,
-        );
+      if (success) {
+        const msg = `${this.logTag}Liquidated ${position.user} on ${marketId}`;
+        console.log(msg);
+        void sendTelegramAlert(`✅ ${msg}`);
+      } else {
+        console.log(`${this.logTag}ℹ️ Skipped ${position.user} on ${marketId} (not profitable)`);
+      }
     } catch (error) {
-      console.error(
-        `${this.logTag}Failed to liquidate ${position.user} on ${MarketUtils.getMarketId(marketParams)}`,
-        error,
-      );
+      const msg = `${this.logTag}Failed to liquidate ${position.user} on ${marketId}`;
+      console.error(msg, error);
+      void sendTelegramAlert(`❌ ${msg}`);
     }
   }
 
@@ -229,48 +244,83 @@ export class LiquidationBot {
       args: [calls],
     } as const;
 
-    const [{ results }, gasPrice] = await Promise.all([
-      simulateCalls(this.client, {
-        account: this.client.account.address,
-        calls: [
-          {
-            to: marketParams.loanToken,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [this.client.account.address],
-          },
-          { to: encoder.address, ...functionData },
-          {
-            to: marketParams.loanToken,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [this.client.account.address],
-          },
-        ],
-      }),
-      getGasPrice(this.client),
-    ]);
+    let profitable: boolean | undefined;
 
-    if (results[1].status !== "success") {
-      console.warn(`${this.logTag}Transaction failed in simulation: ${results[1].error}`);
-      return;
+    if (this.skipSimulation) {
+      // Simulation handled externally (e.g. by Canoe) — skip profit check too
+      profitable = true;
+    } else {
+      try {
+        const [{ results }, gasPrice] = await Promise.all([
+          simulateCalls(this.client, {
+            account: this.client.account.address,
+            calls: [
+              {
+                to: marketParams.loanToken,
+                abi: erc20Abi,
+                functionName: "balanceOf",
+                args: [this.client.account.address],
+              },
+              { to: encoder.address, ...functionData },
+              {
+                to: marketParams.loanToken,
+                abi: erc20Abi,
+                functionName: "balanceOf",
+                args: [this.client.account.address],
+              },
+            ],
+          }),
+          getGasPrice(this.client),
+        ]);
+
+        if (results[1].status !== "success") {
+          console.warn(`${this.logTag}Transaction failed in simulation: ${results[1].error}`);
+          return;
+        }
+
+        profitable = await this.checkProfit(
+          marketParams.loanToken,
+          {
+            beforeTx: results[0].result,
+            afterTx: results[2].result,
+          },
+          {
+            used: results[1].gasUsed,
+            price: gasPrice,
+          },
+          badDebtPosition,
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("does not exist")) {
+          // Fallback for chains that don't support eth_simulateV1 (e.g. HyperEVM)
+          const execData = encodeFunctionData({
+            abi: executorAbi,
+            functionName: "exec_606BaXt",
+            args: [calls],
+          });
+
+          const [gasEstimate, gasPrice] = await Promise.all([
+            estimateGas(this.client, {
+              account: this.client.account.address,
+              to: encoder.address,
+              data: execData,
+            }),
+            getGasPrice(this.client),
+          ]);
+
+          profitable = await this.checkProfit(
+            marketParams.loanToken,
+            { beforeTx: undefined, afterTx: undefined },
+            { used: gasEstimate, price: gasPrice },
+            badDebtPosition,
+          );
+        } else {
+          throw error;
+        }
+      }
     }
 
-    if (
-      !(await this.checkProfit(
-        marketParams.loanToken,
-        {
-          beforeTx: results[0].result,
-          afterTx: results[2].result,
-        },
-        {
-          used: results[1].gasUsed,
-          price: gasPrice,
-        },
-        badDebtPosition,
-      ))
-    )
-      return false;
+    if (!profitable) return false;
 
     // TX EXECUTION
 
@@ -322,25 +372,24 @@ export class LiquidationBot {
   }
 
   private async price(asset: Address, amount: bigint, pricers: Pricer[]) {
-    let price: number | undefined = undefined;
-
     for (const pricer of pricers) {
-      price = await pricer.price(this.client, asset);
-      if (price !== undefined) break;
+      const result = await pricer.price(this.client, asset);
+      if (result === undefined) continue;
+
+      const decimals =
+        result.decimals ??
+        (asset === this.wNative
+          ? 18
+          : (this.decimalsCache[asset] ??= await readContract(this.client, {
+              address: asset,
+              abi: erc20Abi,
+              functionName: "decimals",
+            })));
+
+      return parseFloat(formatUnits(amount, decimals)) * result.usdPrice;
     }
 
-    if (price === undefined) return undefined;
-
-    const decimals =
-      asset === this.wNative
-        ? 18
-        : await readContract(this.client, {
-            address: asset,
-            abi: erc20Abi,
-            functionName: "decimals",
-          });
-
-    return parseFloat(formatUnits(amount, decimals)) * price;
+    return undefined;
   }
 
   private async checkProfit(
@@ -402,8 +451,10 @@ export class LiquidationBot {
     if (this.vaultWhitelist === "morpho-api")
       this.vaultWhitelist = await fetchWhitelistedVaults(this.chainId);
 
-    const vaultWhitelist = this.vaultWhitelist;
-    console.log(`${this.logTag}📝 Watching markets in the following vaults:`, vaultWhitelist);
+    const vaultWhitelist = this.vaultWhitelist === "all" ? [] : this.vaultWhitelist;
+    console.log(
+      `${this.logTag}📝 Watching markets in ${this.vaultWhitelist === "all" ? "all" : vaultWhitelist.length} vaults`,
+    );
 
     const whitelistedMarketsFromVaults = await this.dataProvider.fetchMarkets(
       this.client,
@@ -411,5 +462,6 @@ export class LiquidationBot {
     );
 
     this.coveredMarkets = [...whitelistedMarketsFromVaults, ...this.additionalMarketsWhitelist];
+    console.log(`${this.logTag}Covering ${this.coveredMarkets.length} markets`);
   }
 }

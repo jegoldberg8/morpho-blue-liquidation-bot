@@ -1,3 +1,4 @@
+export * from "./canoe";
 export * from "./chainlink";
 export * from "./defillama";
 export * from "./morphoApi";

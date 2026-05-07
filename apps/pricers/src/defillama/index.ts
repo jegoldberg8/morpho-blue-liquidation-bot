@@ -1,6 +1,6 @@
 import type { Account, Address, Chain, Client, Transport } from "viem";
 
-import type { Pricer } from "../pricer";
+import type { PriceResult, Pricer } from "../pricer";
 
 type CoinKey = `${string}:0x${string}`;
 
@@ -26,17 +26,20 @@ export class DefiLlamaPricer implements Pricer {
   private priceCache = new Map<CoinKey, CachedPrice>();
   private readonly cacheTimeoutMs: number = 10_000; // 10 seconds
 
-  async price(client: Client<Transport, Chain, Account>, asset: Address) {
+  async price(
+    client: Client<Transport, Chain, Account>,
+    asset: Address,
+  ): Promise<PriceResult | undefined> {
     const cacheKey = this.getCoinKey(client, asset);
     const cachedResult = this.priceCache.get(cacheKey);
 
     if (cachedResult && Date.now() - cachedResult.fetchTimestamp < this.cacheTimeoutMs) {
-      return cachedResult.price;
+      return { usdPrice: cachedResult.price };
     }
 
     const price = await this.fetchPrice(client, asset);
-
-    return price;
+    if (price === undefined) return undefined;
+    return { usdPrice: price };
   }
 
   private async fetchPrice(

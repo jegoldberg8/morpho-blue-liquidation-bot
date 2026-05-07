@@ -29,7 +29,8 @@ export class MorphoApi implements Pricer {
 
       const priceUsd = items.find((item) => item.address === asset)?.priceUsd ?? null;
 
-      return priceUsd ?? undefined;
+      if (priceUsd == null) return undefined;
+      return { usdPrice: priceUsd };
     } catch (error) {
       console.error(error);
       return undefined;

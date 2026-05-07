@@ -18,20 +18,23 @@ import {
 import { readContract } from "viem/actions";
 
 import { uniswapV3FactoryAbi, uniswapV3PoolAbi } from "../abis/uniswapV3";
-import type { Pricer } from "../pricer";
+import type { PriceResult, Pricer } from "../pricer";
 
 export class UniswapV3Pricer implements Pricer {
   private pools: Record<Address, Record<Address, Address[]>> = {};
   private decimals: Record<Address, number> = {};
 
-  async price(client: Client<Transport, Chain, Account>, asset: Address) {
+  async price(
+    client: Client<Transport, Chain, Account>,
+    asset: Address,
+  ): Promise<PriceResult | undefined> {
     const usdReference = USD_REFERENCE[client.chain.id];
 
     if (usdReference === undefined) return;
 
     /// TODO: allow multiple USD references
 
-    if (asset === usdReference) return 1;
+    if (asset === usdReference) return { usdPrice: 1 };
 
     const pools =
       this.getCachedPools(asset, usdReference) ??
@@ -86,7 +89,8 @@ export class UniswapV3Pricer implements Pricer {
         ),
       );
 
-      return token0 === asset ? price : 1 / price;
+      const usdPrice = token0 === asset ? price : 1 / price;
+      return { usdPrice };
     } catch (error) {
       console.log(`Error pricing ${asset} on UniswapV3`);
       console.error(error);

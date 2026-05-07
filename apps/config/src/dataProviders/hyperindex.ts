@@ -12,6 +12,8 @@ export interface HyperIndexChainConfig {
   preLiquidationFactoryStartBlock: number;
   /** Additional MetaMorpho factory addresses beyond the primary one from blue-sdk. */
   additionalMetaMorphoFactories?: string[];
+  /** Explicit HyperSync URL for chains not auto-detected by Envio. */
+  hypersyncUrl?: string;
 }
 
 /**
@@ -56,6 +58,19 @@ export const hyperIndexChainConfigs: Record<number, HyperIndexChainConfig> = {
     metaMorphoFactoryStartBlock: 32_320_327,
     adaptiveCurveIrmStartBlock: 31_907_457,
     preLiquidationFactoryStartBlock: 32_321_504,
+  },
+  999: {
+    morphoStartBlock: 1_988_429,
+    metaMorphoFactoryStartBlock: 1_988_677,
+    adaptiveCurveIrmStartBlock: 1_988_429,
+    preLiquidationFactoryStartBlock: 1_988_956,
+  },
+  42793: {
+    morphoStartBlock: 21_047_448,
+    metaMorphoFactoryStartBlock: 21_050_315,
+    adaptiveCurveIrmStartBlock: 21_047_448,
+    preLiquidationFactoryStartBlock: 21_050_766,
+    hypersyncUrl: "https://etherlink.hypersync.xyz",
   },
 };
 

@@ -21,10 +21,28 @@ process.on("uncaughtException", (error) => {
 });
 
 async function run() {
+  // --provider=morphoApi or --provider=hyperIndex overrides config
+  const providerArg = process.argv.find((arg) => arg.startsWith("--provider="))?.split("=")[1] as
+    | DataProviderName
+    | undefined;
+
+  // --chain=480 or --chain=999,480 to run specific chains
+  const chainArg = process.argv.find((arg) => arg.startsWith("--chain="))?.split("=")[1];
+  const chainFilter = chainArg ? chainArg.split(",").map(Number) : null;
+
+  if (providerArg) {
+    console.log(`Using data provider override: ${providerArg}`);
+  }
+  if (chainFilter) {
+    console.log(`Running on chains: ${chainFilter.join(", ")}`);
+  }
+
   const configs = Object.keys(chainConfigs)
-    .map((config) => {
+    .map(Number)
+    .filter((id) => !chainFilter || chainFilter.includes(id))
+    .map((id) => {
       try {
-        return chainConfig(Number(config));
+        return chainConfig(id);
       } catch {
         return undefined;
       }
@@ -34,9 +52,10 @@ async function run() {
   // Group chains by data provider name
   const chainsByProvider = new Map<DataProviderName, number[]>();
   for (const config of configs) {
-    const existing = chainsByProvider.get(config.dataProvider) ?? [];
+    const provider = providerArg ?? config.dataProvider;
+    const existing = chainsByProvider.get(provider) ?? [];
     existing.push(config.chainId);
-    chainsByProvider.set(config.dataProvider, existing);
+    chainsByProvider.set(provider, existing);
   }
 
   // Create data providers (one per provider type, shared across chains)

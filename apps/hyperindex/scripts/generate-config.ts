@@ -21,6 +21,7 @@ interface ChainConfig {
   id: number;
   start_block: number;
   rpc?: { url: string; for: string };
+  hypersync_config?: { url: string };
   contracts: ContractConfig[];
 }
 
@@ -72,7 +73,9 @@ function buildChainConfig(chainId: number): ChainConfig {
     ],
   };
 
-  if (!useHyperSync) {
+  if (useHyperSync && blocks.hypersyncUrl) {
+    chainConfig.hypersync_config = { url: blocks.hypersyncUrl };
+  } else if (!useHyperSync) {
     const rpcUrl = process.env[`RPC_URL_${chainId}`];
     if (!rpcUrl) {
       throw new Error(
@@ -184,7 +187,7 @@ const config = {
   ],
   chains: Object.keys(hyperIndexChainConfigs)
     .map(Number)
-    .filter((chainId) => chainId in chainConfigs)
+    .filter((chainId) => chainId in chainConfigs && chainConfigs[chainId].options.dataProvider === "hyperIndex")
     .map(buildChainConfig),
 };
 

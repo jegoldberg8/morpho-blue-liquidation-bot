@@ -15,7 +15,7 @@ import { readContract } from "viem/actions";
 import { mainnet } from "viem/chains";
 
 import { feedRegistryAbi } from "../abis/feedRegistry";
-import type { Pricer } from "../pricer";
+import type { PriceResult, Pricer } from "../pricer";
 
 type CoinKey = `${string}:${Address}`;
 
@@ -32,7 +32,7 @@ export class ChainlinkPricer implements Pricer {
   async price(
     client: Client<Transport, Chain, Account>,
     asset: Address,
-  ): Promise<number | undefined> {
+  ): Promise<PriceResult | undefined> {
     asset = MAPPINGS[asset] ?? asset;
 
     // Feed Registry is only available on Ethereum Mainnet
@@ -45,7 +45,7 @@ export class ChainlinkPricer implements Pricer {
 
     // Return cached price if available and not expired
     if (cachedPrice && Date.now() - cachedPrice.fetchTimestamp < this.CACHE_TIMEOUT_MS) {
-      return cachedPrice.price;
+      return { usdPrice: cachedPrice.price };
     }
 
     try {
@@ -79,7 +79,7 @@ export class ChainlinkPricer implements Pricer {
       // Cache the result
       this.priceCache.set(coinKey, { price, fetchTimestamp: Date.now() });
 
-      return price;
+      return { usdPrice: price };
     } catch (error) {
       if (error instanceof Error) {
         console.error(`Error fetching Chainlink price for ${asset}:`, error);

@@ -99,9 +99,7 @@ const GET_VAULT_MARKETS = gql`
   query GetVaultMarkets($vaultIds: [String!]!) {
     Vault(where: { id: { _in: $vaultIds } }) {
       id
-      withdrawQueue(order_by: { ordinal: asc }) {
-        market_id
-      }
+      withdrawQueue
     }
   }
 `;
@@ -149,7 +147,7 @@ interface HyperIndexAuthorization {
 
 interface HyperIndexVault {
   id: string;
-  withdrawQueue: { market_id: string }[];
+  withdrawQueue: string[];
 }
 
 interface PositionsResponse {
@@ -197,9 +195,11 @@ export class HyperIndexDataProvider implements DataProvider {
   }
 
   async init(): Promise<void> {
+    console.log(`[HyperIndex] init() called, selfhost=${this.selfhost}, url=${this.url}`);
     if (!this.selfhost) {
       console.log(`[HyperIndex] Using external instance at ${this.url}`);
       await this.waitForReady();
+      console.log("[HyperIndex] waitForReady() completed");
       return;
     }
 
@@ -237,15 +237,29 @@ export class HyperIndexDataProvider implements DataProvider {
 
   async fetchMarkets(client: Client<Transport, Chain, Account>, vaults: Address[]): Promise<Hex[]> {
     try {
-      const vaultIds = vaults.map((v) => `${client.chain.id}-${v.toLowerCase()}`);
+      let response: VaultMarketsResponse;
 
-      const response = await this.graphqlClient.request<VaultMarketsResponse>(GET_VAULT_MARKETS, {
-        vaultIds,
-      });
+      if (vaults.length === 0) {
+        // Fetch all vaults for this chain from the indexer
+        response = await this.graphqlClient.request<VaultMarketsResponse>(
+          gql`
+            query GetAllVaultMarkets($chainId: Int!) {
+              Vault(where: { chainId: { _eq: $chainId } }) {
+                id
+                withdrawQueue
+              }
+            }
+          `,
+          { chainId: client.chain.id },
+        );
+      } else {
+        const vaultIds = vaults.map((v) => `${client.chain.id}-${v.toLowerCase()}`);
+        response = await this.graphqlClient.request<VaultMarketsResponse>(GET_VAULT_MARKETS, {
+          vaultIds,
+        });
+      }
 
-      const marketIds = response.Vault.flatMap((vault) =>
-        vault.withdrawQueue.filter((item) => item.market_id != null).map((item) => item.market_id),
-      );
+      const marketIds = response.Vault.flatMap((vault) => vault.withdrawQueue);
       return [...new Set(marketIds)] as Hex[];
     } catch (error) {
       console.error(`[Chain ${client.chain.id}] Error fetching markets from HyperIndex:`, error);
@@ -511,7 +525,9 @@ export class HyperIndexDataProvider implements DataProvider {
         `);
 
         const chains = data.chain_metadata ?? [];
+        console.log(`[HyperIndex] chain_metadata: ${JSON.stringify(chains)}`);
         if (chains.length === 0) {
+          console.log("[HyperIndex] No chains found, waiting...");
           await new Promise((resolve) => setTimeout(resolve, HEALTH_CHECK_INTERVAL_MS));
           continue;
         }
@@ -566,6 +582,9 @@ export class HyperIndexDataProvider implements DataProvider {
           lineCount++;
         }
 
+        console.log(
+          `[HyperIndex] allCaughtUp=${allCaughtUp}, chainTips=${JSON.stringify([...chainTips])}`,
+        );
         if (allCaughtUp) {
           console.log("[HyperIndex] Backfill complete");
           return;

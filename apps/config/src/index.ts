@@ -13,7 +13,11 @@ export function chainConfig(chainId: number): ChainConfig {
   }
 
   const { vaultWhitelist, additionalMarketsWhitelist } = config.options;
-  if (vaultWhitelist.length === 0 && additionalMarketsWhitelist.length === 0) {
+  if (
+    typeof vaultWhitelist !== "string" &&
+    vaultWhitelist.length === 0 &&
+    additionalMarketsWhitelist.length === 0
+  ) {
     throw new Error(
       `Vault whitelist and additional markets whitelist both empty for chainId ${chainId}`,
     );

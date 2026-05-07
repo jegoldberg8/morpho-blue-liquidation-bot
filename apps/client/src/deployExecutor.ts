@@ -8,7 +8,16 @@ import { deploy } from "./utils/deploy-executor.js";
 async function run() {
   dotenv.config();
 
-  const configs = Object.values(chainConfigs);
+  const chainIdArg = process.argv.find((arg) => arg.startsWith("--chain="))?.split("=")[1];
+
+  const configs = Object.values(chainConfigs).filter(
+    (c) => !chainIdArg || c.chain.id === Number(chainIdArg),
+  );
+
+  if (configs.length === 0) {
+    console.error(`No chain found for --chain=${chainIdArg}`);
+    process.exit(1);
+  }
 
   for (const config of configs) {
     const chain = config.chain;
@@ -21,7 +30,8 @@ async function run() {
       throw new Error(`RPC_URL_${id} is not set`);
     }
     if (!privateKey) {
-      throw new Error(`LIQUIDATION_PRIVATE_KEY_${id} is not set`);
+      console.log(`Skipping ${chain.name} (chain ${id}): LIQUIDATION_PRIVATE_KEY_${id} is not set`);
+      continue;
     }
 
     const client = createWalletClient({

@@ -2,6 +2,7 @@ import type { Address, Chain, Hex } from "viem";
 
 export type LiquidityVenueName =
   | "1inch"
+  | "canoe"
   | "erc20Wrapper"
   | "erc4626"
   | "liquidSwap"
@@ -10,7 +11,7 @@ export type LiquidityVenueName =
   | "uniswapV3"
   | "uniswapV4";
 
-export type PricerName = "chainlink" | "defillama" | "morphoApi" | "uniswapV3";
+export type PricerName = "canoe" | "chainlink" | "defillama" | "morphoApi" | "uniswapV3";
 
 export type DataProviderName = "morphoApi" | "hyperIndex";
 
@@ -22,7 +23,7 @@ export interface Config {
 
 export interface Options {
   dataProvider: DataProviderName;
-  vaultWhitelist: Address[] | "morpho-api";
+  vaultWhitelist: Address[] | "morpho-api" | "all";
   additionalMarketsWhitelist: Hex[];
   liquidityVenues: LiquidityVenueName[];
   pricers?: PricerName[];
@@ -31,6 +32,9 @@ export interface Options {
   useFlashbots: boolean;
   blockInterval?: number;
   watchBlocksRetryDelayMs?: number;
+  skipSimulation?: boolean;
+  /** Minimum seizable collateral (in USD) to attempt liquidation. Skips dust positions. */
+  minCollateralUsd?: number;
 }
 
 export type ChainConfig = Omit<Config, "options"> &

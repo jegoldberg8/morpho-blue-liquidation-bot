@@ -4,7 +4,6 @@ RUN corepack enable && corepack prepare pnpm@9.13.2 --activate
 
 WORKDIR /app
 
-# Copy package files for layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/config/package.json apps/config/
 COPY apps/client/package.json apps/client/
@@ -17,6 +16,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN pnpm build
+RUN pnpm build:config
+RUN cd apps/hyperindex && pnpm codegen
 
-CMD ["node", "node_modules/.bin/tsx", "apps/client/src/script.ts", "--env-file=.env"]
+CMD ["sh", "-c", "pnpm tsx apps/hyperindex/scripts/generate-config.ts && cd apps/hyperindex && TUI_OFF=true envio start"]

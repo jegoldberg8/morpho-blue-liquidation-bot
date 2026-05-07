@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_PASSWORD: testing
+      POSTGRES_DB: envio_dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  hasura:
+    image: hasura/graphql-engine:v2.43.0
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:testing@postgres:5432/envio_dev
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: testing
+    depends_on:
+      - postgres
+
+  indexer:
+    build:
+      context: .
+      dockerfile: Dockerfile.indexer
+    restart: always
+    env_file: .env
+    environment:
+      ENVIO_POSTGRES_URL: postgres://postgres:testing@postgres:5432/envio_dev
+      ENVIO_HASURA_URL: http://hasura:8080
+    depends_on:
+      - hasura
+
+  bot:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      HYPERINDEX_URL: http://hasura:8080/v1/graphql
+    depends_on:
+      - hasura
+      - indexer
+
+volumes:
+  pgdata:

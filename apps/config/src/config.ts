@@ -1,4 +1,4 @@
-import { arbitrum, base, katana, mainnet, unichain, worldchain } from "viem/chains";
+import { arbitrum, base, etherlink, katana, mainnet, unichain, worldchain } from "viem/chains";
 
 import { hyperevm, monad } from "./chains";
 import type { Config } from "./types";
@@ -41,7 +41,7 @@ export const chainConfigs: Record<number, Config> = {
       pricers: ["defillama", "chainlink", "uniswapV3"],
       liquidationBufferBps: 50,
       useFlashbots: true,
-      blockInterval: 2,
+      // blockInterval: 2,
     },
   },
   [base.id]: {
@@ -108,17 +108,15 @@ export const chainConfigs: Record<number, Config> = {
     chain: worldchain,
     wNative: "0x4200000000000000000000000000000000000006",
     options: {
-      dataProvider: "morphoApi",
-      vaultWhitelist: [
-        "0xb1E80387EbE53Ff75a89736097D34dC8D9E9045B", // Re7 USDC
-        "0x348831b46876d3dF2Db98BdEc5E3B4083329Ab9f", // Re7 WLD
-        "0x0Db7E405278c2674F462aC9D9eb8b8346D1c1571", // Re7 WETH
-        "0xBC8C37467c5Df9D50B42294B8628c25888BECF61", // Re7 WBTC
-      ],
+      dataProvider: "hyperIndex",
+      vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
-      liquidityVenues: ["erc20Wrapper", "erc4626", "uniswapV3", "uniswapV4"],
+      liquidityVenues: ["canoe", "erc20Wrapper", "erc4626"],
+      pricers: ["canoe"],
       liquidationBufferBps: 50,
       useFlashbots: false,
+      skipSimulation: true,
+      minCollateralUsd: 1,
       blockInterval: 5,
     },
   },
@@ -126,16 +124,16 @@ export const chainConfigs: Record<number, Config> = {
     chain: hyperevm,
     wNative: "0x5555555555555555555555555555555555555555",
     options: {
-      dataProvider: "morphoApi",
-      vaultWhitelist: [
-        "0x8A862fD6c12f9ad34C9c2ff45AB2b6712e8CEa27", // Felix USDC
-        "0xFc5126377F0efc0041C0969Ef9BA903Ce67d151e", // Felix USDT
-        "0x2900ABd73631b2f60747e687095537B673c06A76", // Felix HYPE
-      ],
-      liquidityVenues: ["liquidSwap", "erc20Wrapper", "erc4626", "uniswapV3"],
+      dataProvider: "hyperIndex",
+      vaultWhitelist: "all",
+      liquidityVenues: ["canoe", "erc20Wrapper", "erc4626"],
+      pricers: ["canoe"],
       additionalMarketsWhitelist: [],
       liquidationBufferBps: 50,
       useFlashbots: false,
+      skipSimulation: true,
+      minCollateralUsd: 1,
+      blockInterval: 1,
     },
   },
   [monad.id]: {
@@ -149,6 +147,22 @@ export const chainConfigs: Record<number, Config> = {
       liquidationBufferBps: 50,
       useFlashbots: false,
       blockInterval: 10,
+    },
+  },
+  [etherlink.id]: {
+    chain: etherlink,
+    wNative: "0xc9B53AB2679f573e480d01e0f49e2B5CFB7a3EAb",
+    options: {
+      dataProvider: "hyperIndex",
+      vaultWhitelist: "all",
+      additionalMarketsWhitelist: [],
+      liquidityVenues: ["canoe", "erc20Wrapper", "erc4626"],
+      pricers: ["canoe"],
+      liquidationBufferBps: 50,
+      useFlashbots: false,
+      skipSimulation: true,
+      minCollateralUsd: 1,
+      blockInterval: 5,
     },
   },
 };
