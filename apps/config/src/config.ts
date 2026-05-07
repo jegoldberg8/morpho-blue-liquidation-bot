@@ -1,4 +1,13 @@
-import { arbitrum, base, etherlink, katana, mainnet, unichain, worldchain } from "viem/chains";
+import {
+  arbitrum,
+  base,
+  etherlink,
+  katana,
+  mainnet,
+  optimism,
+  unichain,
+  worldchain,
+} from "viem/chains";
 
 import { hyperevm, monad } from "./chains";
 import type { Config } from "./types";
@@ -70,12 +79,15 @@ export const chainConfigs: Record<number, Config> = {
     chain: unichain,
     wNative: "0x4200000000000000000000000000000000000006",
     options: {
-      dataProvider: "morphoApi",
-      vaultWhitelist: "morpho-api",
+      dataProvider: "hyperIndex",
+      vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
-      liquidityVenues: ["1inch", "erc20Wrapper", "erc4626", "uniswapV3", "uniswapV4"],
+      liquidityVenues: ["canoe", "erc20Wrapper", "erc4626"],
+      pricers: ["canoe"],
       liquidationBufferBps: 50,
       useFlashbots: false,
+      skipSimulation: true,
+      minCollateralUsd: 1,
       blockInterval: 5,
     },
   },
@@ -140,13 +152,32 @@ export const chainConfigs: Record<number, Config> = {
     chain: monad,
     wNative: "0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A",
     options: {
-      dataProvider: "morphoApi",
-      vaultWhitelist: "morpho-api",
+      dataProvider: "hyperIndex",
+      vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
-      liquidityVenues: ["erc20Wrapper", "erc4626", "uniswapV3"],
+      liquidityVenues: ["canoe", "erc20Wrapper", "erc4626"],
+      pricers: ["canoe"],
       liquidationBufferBps: 50,
       useFlashbots: false,
-      blockInterval: 10,
+      skipSimulation: true,
+      minCollateralUsd: 1,
+      blockInterval: 5,
+    },
+  },
+  [optimism.id]: {
+    chain: optimism,
+    wNative: "0x4200000000000000000000000000000000000006",
+    options: {
+      dataProvider: "hyperIndex",
+      vaultWhitelist: "all",
+      additionalMarketsWhitelist: [],
+      liquidityVenues: ["canoe", "erc20Wrapper", "erc4626"],
+      pricers: ["canoe"],
+      liquidationBufferBps: 50,
+      useFlashbots: false,
+      skipSimulation: true,
+      minCollateralUsd: 1,
+      blockInterval: 5,
     },
   },
   [etherlink.id]: {

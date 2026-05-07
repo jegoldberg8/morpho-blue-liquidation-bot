@@ -54,10 +54,10 @@ export const hyperIndexChainConfigs: Record<number, HyperIndexChainConfig> = {
     preLiquidationFactoryStartBlock: 10_273_494,
   },
   143: {
-    morphoStartBlock: 31_907_457,
-    metaMorphoFactoryStartBlock: 32_320_327,
-    adaptiveCurveIrmStartBlock: 31_907_457,
-    preLiquidationFactoryStartBlock: 32_321_504,
+    morphoStartBlock: 70_426_255,
+    metaMorphoFactoryStartBlock: 70_425_540,
+    adaptiveCurveIrmStartBlock: 70_425_592,
+    preLiquidationFactoryStartBlock: 70_425_603,
   },
   999: {
     morphoStartBlock: 1_988_429,
@@ -71,6 +71,12 @@ export const hyperIndexChainConfigs: Record<number, HyperIndexChainConfig> = {
     adaptiveCurveIrmStartBlock: 21_047_448,
     preLiquidationFactoryStartBlock: 21_050_766,
     hypersyncUrl: "https://etherlink.hypersync.xyz",
+  },
+  10: {
+    morphoStartBlock: 130_770_075,
+    metaMorphoFactoryStartBlock: 130_770_189,
+    adaptiveCurveIrmStartBlock: 130_770_075,
+    preLiquidationFactoryStartBlock: 132_139_369,
   },
 };
 

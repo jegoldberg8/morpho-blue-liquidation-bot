@@ -12,6 +12,31 @@ const MARKETS_BY_CHAIN: Record<string, string[]> = {
   hyperevm: ["enso", "icecreamswap", "kyberswap", "openocean", "usor", "zeroex"],
   worldchain: ["enso", "icecreamswap", "usor", "zeroex"],
   etherlink: ["kyberswap", "threeroute", "usor"],
+  monad: ["enso", "icecreamswap", "kyberswap", "okx", "openocean", "usor", "zeroex"],
+  unichain: [
+    "enso",
+    "icecreamswap",
+    "kyberswap",
+    "odos",
+    "okx",
+    "oneinch",
+    "openocean",
+    "paraswap",
+    "usor",
+    "zeroex",
+  ],
+  optimism: [
+    "enso",
+    "icecreamswap",
+    "kyberswap",
+    "odos",
+    "okx",
+    "oneinch",
+    "openocean",
+    "paraswap",
+    "usor",
+    "zeroex",
+  ],
 };
 
 export class CanoeVenue implements LiquidityVenue {

@@ -23,7 +23,10 @@ async function run() {
     const chain = config.chain;
     const id = chain.id;
 
-    const rpcUrl = process.env[`RPC_URL_${id}`] ?? chain.rpcUrls.default.http[0];
+    const rpcUrl =
+      process.env[`WRITE_RPC_URL_${id}`] ??
+      process.env[`RPC_URL_${id}`] ??
+      chain.rpcUrls.default.http[0];
     const privateKey = process.env[`LIQUIDATION_PRIVATE_KEY_${id}`];
 
     if (!rpcUrl) {
