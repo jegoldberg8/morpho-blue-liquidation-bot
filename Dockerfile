@@ -19,4 +19,4 @@ COPY . .
 
 RUN pnpm build
 
-CMD ["npx", "tsx", "apps/client/src/script.ts", "--env-file=.env"]
+CMD ["sh", "-c", "pnpm tsx apps/client/src/script.ts --env-file=.env"]
