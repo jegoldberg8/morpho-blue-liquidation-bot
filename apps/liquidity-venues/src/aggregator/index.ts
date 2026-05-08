@@ -9,6 +9,7 @@ const ENSO_KEY = process.env.ENSO_API_KEY ?? "";
 const NORDSTERN_URL = "https://api.nordstern.finance";
 const ZEROX_URL = "https://api.0x.org/swap/allowance-holder/quote";
 const ZEROX_KEY = process.env.ZEROX_API_KEY ?? "";
+const LIFI_URL = "https://li.quest/v1/quote";
 
 interface QuoteResult {
   toAmount: bigint;
@@ -111,6 +112,38 @@ async function fetchZeroEx(
   };
 }
 
+async function fetchLiFi(
+  chainId: number,
+  src: Address,
+  dst: Address,
+  amount: bigint,
+  from: Address,
+): Promise<QuoteResult> {
+  const params = new URLSearchParams({
+    fromChain: chainId.toString(),
+    toChain: chainId.toString(),
+    fromToken: src,
+    toToken: dst,
+    fromAddress: from,
+    fromAmount: amount.toString(),
+    slippage: "0.03",
+    skipSimulation: "true",
+  });
+  const res = await fetch(`${LIFI_URL}?${params}`);
+  if (!res.ok) throw new Error(`lifi ${res.status}`);
+  const data = (await res.json()) as {
+    estimate: { toAmount: string };
+    transactionRequest: { to: string; data: string; value: string };
+  };
+  if (!data.transactionRequest?.data || !data.estimate?.toAmount) throw new Error("lifi no route");
+  return {
+    toAmount: BigInt(data.estimate.toAmount),
+    to: data.transactionRequest.to as Address,
+    data: data.transactionRequest.data as Hex,
+    value: BigInt(data.transactionRequest.value || "0"),
+  };
+}
+
 export class AggregatorVenue implements LiquidityVenue {
   supportsRoute(_encoder: ExecutorEncoder, src: Address, dst: Address) {
     return src !== dst;
@@ -147,6 +180,7 @@ export class AggregatorVenue implements LiquidityVenue {
         fetchEnso(chainId, src, dst, amount, from),
         fetchNordstern(chainId, src, dst, amount, from),
         fetchZeroEx(chainId, src, dst, amount, from),
+        fetchLiFi(chainId, src, dst, amount, from),
       ]);
     } catch {
       return null;
