@@ -43,6 +43,7 @@ import { fetchWhitelistedVaults } from "./utils/fetch-whitelisted-vaults.js";
 import { Flashbots } from "./utils/flashbots.js";
 import { LiquidationEncoder } from "./utils/LiquidationEncoder.js";
 import { DEFAULT_LIQUIDATION_BUFFER_BPS, WAD, wMulDown } from "./utils/maths.js";
+import { priceCache } from "./utils/priceCache.js";
 import { sendTelegramAlert } from "./utils/telegram.js";
 
 export interface LiquidationBotInputs {
@@ -132,14 +133,14 @@ export class LiquidationBot {
 
     if (!this.checkCooldown(marketId, position.user)) return;
 
-    // Skip dust positions
-    if (this.minCollateralUsd > 0 && this.pricers && this.pricers.length > 0) {
-      const collateralUsd = await this.price(
-        marketParams.collateralToken,
-        seizableCollateral,
-        this.pricers,
-      );
-      if (collateralUsd !== undefined && collateralUsd < this.minCollateralUsd) return;
+    // Skip dust positions using cached prices (no external calls)
+    if (this.minCollateralUsd > 0) {
+      const cachedPrice = priceCache.getPrice(this.chainId, marketParams.collateralToken);
+      if (cachedPrice !== undefined) {
+        const decimals = priceCache.getDecimals(this.chainId, marketParams.collateralToken);
+        const collateralUsd = parseFloat(formatUnits(seizableCollateral, decimals)) * cachedPrice;
+        if (collateralUsd < this.minCollateralUsd) return;
+      }
     }
 
     const reducedCollateral = this.decreaseSeizableCollateral(seizableCollateral, badDebtPosition);

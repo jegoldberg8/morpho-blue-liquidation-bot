@@ -7,8 +7,10 @@ import {
   createDataProviders,
   type DataProvider,
 } from "@morpho-blue-liquidation-bot/data-providers";
+import { createPublicClient, erc20Abi, http, type Address } from "viem";
 
 import { startHealthServer } from "./health";
+import { priceCache } from "./utils/priceCache";
 
 import { launchBot } from ".";
 
@@ -66,6 +68,47 @@ async function run() {
       providersByChain.set(chainId, provider);
     }
   }
+
+  // Register tokens for price caching — fetch all unique tokens from indexer
+  for (const config of configs) {
+    priceCache.registerToken(config.chainId, config.wNative);
+
+    const dataProvider = providersByChain.get(config.chainId);
+    if (dataProvider && "graphqlClient" in dataProvider) {
+      try {
+        const gqlClient = (dataProvider as any).graphqlClient;
+        const data = await gqlClient.request(
+          `{ Market(where: { chainId: { _eq: ${config.chainId} } }) { loanToken collateralToken } }`,
+        );
+        const tokens = new Set<string>();
+        for (const m of data.Market ?? []) {
+          priceCache.registerToken(config.chainId, m.collateralToken);
+          priceCache.registerToken(config.chainId, m.loanToken);
+          tokens.add(m.collateralToken);
+          tokens.add(m.loanToken);
+        }
+
+        // Fetch decimals for all tokens (one RPC call each, done once)
+        const client = createPublicClient({ chain: config.chain, transport: http(config.rpcUrl) });
+        for (const token of tokens) {
+          try {
+            const dec = await client.readContract({
+              address: token as Address,
+              abi: erc20Abi,
+              functionName: "decimals",
+            });
+            priceCache.setDecimals(config.chainId, token as Address, dec);
+          } catch {
+            // default to 18
+          }
+        }
+        console.log(`[PriceCache] chain=${config.chainId}: registered ${tokens.size} tokens`);
+      } catch {
+        // Fallback for non-indexer chains
+      }
+    }
+  }
+  await priceCache.start();
 
   try {
     await startHealthServer();
