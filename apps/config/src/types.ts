@@ -2,6 +2,7 @@ import type { Address, Chain, Hex } from "viem";
 
 export type LiquidityVenueName =
   | "1inch"
+  | "enso"
   | "erc20Wrapper"
   | "erc4626"
   | "liquidSwap"
@@ -9,7 +10,8 @@ export type LiquidityVenueName =
   | "nordstern"
   | "pendlePT"
   | "uniswapV3"
-  | "uniswapV4";
+  | "uniswapV4"
+  | "zeroex";
 
 export type PricerName = "chainlink" | "defillama" | "morphoApi" | "nordstern" | "uniswapV3";
 

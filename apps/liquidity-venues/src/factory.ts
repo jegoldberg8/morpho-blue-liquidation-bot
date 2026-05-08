@@ -1,6 +1,7 @@
 import type { LiquidityVenueName } from "@morpho-blue-liquidation-bot/config";
 
 import { OneInch } from "./1inch";
+import { EnsoVenue } from "./enso";
 import { Erc20Wrapper } from "./erc20Wrapper";
 import { Erc4626 } from "./erc4626";
 import { LiquidityVenue } from "./liquidityVenue";
@@ -10,6 +11,7 @@ import { NordsternVenue } from "./nordstern";
 import { PendlePTVenue } from "./pendlePT";
 import { UniswapV3Venue } from "./uniswapV3";
 import { UniswapV4Venue } from "./uniswapV4";
+import { ZeroExVenue } from "./zeroex";
 
 /**
  * Creates a liquidity venue instance based on the liquidity venue name from config.
@@ -18,6 +20,8 @@ import { UniswapV4Venue } from "./uniswapV4";
  */
 export function createLiquidityVenue(liquidityVenueName: LiquidityVenueName): LiquidityVenue {
   switch (liquidityVenueName) {
+    case "enso":
+      return new EnsoVenue();
     case "erc20Wrapper":
       return new Erc20Wrapper();
     case "erc4626":
@@ -36,6 +40,8 @@ export function createLiquidityVenue(liquidityVenueName: LiquidityVenueName): Li
       return new PendlePTVenue();
     case "1inch":
       return new OneInch();
+    case "zeroex":
+      return new ZeroExVenue();
     default:
       throw new Error(`Unknown liquidity venue: ${liquidityVenueName}`);
   }

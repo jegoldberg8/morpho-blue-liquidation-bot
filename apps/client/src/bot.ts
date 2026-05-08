@@ -171,19 +171,17 @@ export class LiquidationBot {
     const calls = encoder.flush();
 
     try {
-      const success = await this.handleTx(encoder, calls, marketParams, badDebtPosition);
+      const result = await this.handleTx(encoder, calls, marketParams, badDebtPosition);
 
-      if (success) {
-        const msg = `${this.logTag}Liquidated ${position.user} on ${marketId}`;
+      if (result === false) {
+        console.log(`${this.logTag}ℹ️ Skipped ${position.user} on ${marketId} (not profitable)`);
+      } else if (result) {
+        const msg = `${this.logTag}Liquidated ${position.user} on ${marketId}\ntx: ${result}`;
         console.log(msg);
         void sendTelegramAlert(`✅ ${msg}`);
-      } else {
-        console.log(`${this.logTag}ℹ️ Skipped ${position.user} on ${marketId} (not profitable)`);
       }
     } catch (error) {
-      const msg = `${this.logTag}Failed to liquidate ${position.user} on ${marketId}`;
-      console.error(msg, error);
-      void sendTelegramAlert(`❌ ${msg}`);
+      console.error(`${this.logTag}Failed to liquidate ${position.user} on ${marketId}`, error);
     }
   }
 
@@ -341,10 +339,8 @@ export class LiquidationBot {
       );
       return true;
     } else {
-      await writeContract(this.client, { address: encoder.address, ...functionData });
+      return await writeContract(this.client, { address: encoder.address, ...functionData });
     }
-
-    return true;
   }
 
   private async convertCollateralToLoan(
