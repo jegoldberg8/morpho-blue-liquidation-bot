@@ -15,6 +15,7 @@ const MARKETS_BY_CHAIN: Record<string, string[]> = {
   hyperevm: ["enso", "icecreamswap", "kyberswap", "openocean", "usor", "zeroex"],
   worldchain: ["enso", "icecreamswap", "usor", "zeroex"],
   etherlink: ["kyberswap", "threeroute", "usor"],
+  sei: ["enso", "icecreamswap", "oneinch", "openocean", "usor"],
   monad: ["enso", "icecreamswap", "kyberswap", "okx", "openocean", "usor", "zeroex"],
   unichain: [
     "enso",

@@ -5,6 +5,7 @@ import {
   katana,
   mainnet,
   optimism,
+  sei,
   unichain,
   worldchain,
 } from "viem/chains";
@@ -79,7 +80,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: unichain,
     wNative: "0x4200000000000000000000000000000000000006",
     options: {
-      dataProvider: "hyperIndex",
+      dataProvider: "morphoApi",
       vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
       liquidityVenues: ["dexAggregator", "erc20Wrapper", "erc4626"],
@@ -136,7 +137,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: hyperevm,
     wNative: "0x5555555555555555555555555555555555555555",
     options: {
-      dataProvider: "hyperIndex",
+      dataProvider: "morphoApi",
       vaultWhitelist: "all",
       liquidityVenues: ["dexAggregator", "erc20Wrapper", "erc4626"],
       pricers: ["dexAggregator"],
@@ -168,7 +169,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: optimism,
     wNative: "0x4200000000000000000000000000000000000006",
     options: {
-      dataProvider: "hyperIndex",
+      dataProvider: "morphoApi",
       vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
       liquidityVenues: ["dexAggregator", "erc20Wrapper", "erc4626"],
@@ -183,6 +184,22 @@ export const chainConfigs: Record<number, Config> = {
   [etherlink.id]: {
     chain: etherlink,
     wNative: "0xc9B53AB2679f573e480d01e0f49e2B5CFB7a3EAb",
+    options: {
+      dataProvider: "morphoApi",
+      vaultWhitelist: "all",
+      additionalMarketsWhitelist: [],
+      liquidityVenues: ["dexAggregator", "erc20Wrapper", "erc4626"],
+      pricers: ["dexAggregator"],
+      liquidationBufferBps: 50,
+      useFlashbots: false,
+      skipSimulation: true,
+      minCollateralUsd: 1,
+      blockInterval: 5,
+    },
+  },
+  [sei.id]: {
+    chain: sei,
+    wNative: "0xE30feDd158A2e3b13e9badaeABaFc5516e95e8C7",
     options: {
       dataProvider: "hyperIndex",
       vaultWhitelist: "all",

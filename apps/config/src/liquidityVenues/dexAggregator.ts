@@ -6,5 +6,6 @@ export const DEX_AGGREGATOR_CHAIN_NAMES: Record<number, string> = {
   143: "monad",
   480: "worldchain",
   999: "hyperevm",
+  1329: "sei",
   42793: "etherlink",
 };

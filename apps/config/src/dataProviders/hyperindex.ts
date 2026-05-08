@@ -78,6 +78,12 @@ export const hyperIndexChainConfigs: Record<number, HyperIndexChainConfig> = {
     adaptiveCurveIrmStartBlock: 130_770_075,
     preLiquidationFactoryStartBlock: 132_139_369,
   },
+  1329: {
+    morphoStartBlock: 166_036_723,
+    metaMorphoFactoryStartBlock: 168_896_078,
+    adaptiveCurveIrmStartBlock: 166_036_723,
+    preLiquidationFactoryStartBlock: 168_897_284,
+  },
 };
 
 export const hyperIndexChainIds = Object.keys(hyperIndexChainConfigs).map(Number);
