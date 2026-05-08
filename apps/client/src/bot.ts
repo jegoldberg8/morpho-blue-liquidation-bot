@@ -371,9 +371,14 @@ export class LiquidationBot {
   }
 
   private async price(asset: Address, amount: bigint, pricers: Pricer[]) {
-    for (const pricer of pricers) {
-      const result = await pricer.price(this.client, asset);
-      if (result === undefined) continue;
+    try {
+      const result = await Promise.any(
+        pricers.map(async (pricer) => {
+          const r = await pricer.price(this.client, asset);
+          if (r === undefined) throw new Error("no price");
+          return r;
+        }),
+      );
 
       const decimals =
         result.decimals ??
@@ -386,9 +391,9 @@ export class LiquidationBot {
             })));
 
       return parseFloat(formatUnits(amount, decimals)) * result.usdPrice;
+    } catch {
+      return undefined;
     }
-
-    return undefined;
   }
 
   private async checkProfit(
