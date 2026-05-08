@@ -50,18 +50,22 @@ class PriceCache {
     }, REFRESH_INTERVAL_MS);
   }
 
-  private async refreshAll() {
-    for (const [chainIdStr, tokenSet] of Object.entries(this.tokens)) {
-      const chainId = Number(chainIdStr);
-      const tokens = [...tokenSet];
-      if (tokens.length === 0) continue;
-
+  private async fetchChainPrices(chainId: number, tokens: string[], retries = 3): Promise<void> {
+    for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const tokenList = tokens.join(",");
         const response = await fetch(`${BASE_URL}/prices/${chainId}?token=${tokenList}`);
+
+        if (response.status === 429) {
+          const delay = (attempt + 1) * 5000;
+          console.log(`[PriceCache] chain=${chainId} rate limited, retrying in ${delay / 1000}s`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+
         if (!response.ok) {
           console.log(`[PriceCache] chain=${chainId} HTTP ${response.status}`);
-          continue;
+          return;
         }
 
         const data = (await response.json()) as Record<string, number>;
@@ -75,12 +79,24 @@ class PriceCache {
         }
 
         console.log(`[PriceCache] chain=${chainId}: ${count} token prices cached`);
+        return;
       } catch (error) {
         console.error(`[PriceCache] chain=${chainId} fetch failed`, error);
+        return;
       }
+    }
+  }
 
-      // Delay between chains to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+  private async refreshAll() {
+    for (const [chainIdStr, tokenSet] of Object.entries(this.tokens)) {
+      const chainId = Number(chainIdStr);
+      const tokens = [...tokenSet];
+      if (tokens.length === 0) continue;
+
+      await this.fetchChainPrices(chainId, tokens);
+
+      // Delay between chains
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
 }
