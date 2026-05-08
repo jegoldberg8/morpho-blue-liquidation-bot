@@ -189,7 +189,7 @@ export class LiquidationBot {
           logTag: this.logTag,
           user: position.user,
           marketId,
-          txHash: result as string,
+          txHash: result as Hex,
           loanToken: marketParams.loanToken,
           balanceBefore,
           client: this.client,

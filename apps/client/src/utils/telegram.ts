@@ -4,10 +4,11 @@ import {
   type Chain,
   erc20Abi,
   formatUnits,
+  type Hex,
   type Transport,
   type WalletClient,
 } from "viem";
-import { readContract } from "viem/actions";
+import { readContract, waitForTransactionReceipt } from "viem/actions";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -16,7 +17,7 @@ interface LiquidationAlert {
   logTag: string;
   user: Address;
   marketId: string;
-  txHash: string;
+  txHash: Hex;
   loanToken: Address;
   balanceBefore: bigint;
   client: WalletClient<Transport, Chain, Account>;
@@ -41,13 +42,15 @@ async function send(message: string) {
 }
 
 /**
- * Fire-and-forget: reads on-chain balance to compute reward, then sends Telegram alert.
+ * Fire-and-forget: waits for tx confirmation, reads balance to compute reward, sends Telegram alert.
  */
 export async function sendLiquidationAlert(alert: LiquidationAlert) {
   const { logTag, user, marketId, txHash, loanToken, balanceBefore, client } = alert;
 
   let rewardStr = "";
   try {
+    await waitForTransactionReceipt(client, { hash: txHash });
+
     const [balanceAfter, decimals, symbol] = await Promise.all([
       readContract(client, {
         address: loanToken,
