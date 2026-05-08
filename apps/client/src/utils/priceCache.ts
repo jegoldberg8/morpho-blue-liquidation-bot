@@ -78,6 +78,9 @@ class PriceCache {
       } catch (error) {
         console.error(`[PriceCache] chain=${chainId} fetch failed`, error);
       }
+
+      // Delay between chains to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 }
