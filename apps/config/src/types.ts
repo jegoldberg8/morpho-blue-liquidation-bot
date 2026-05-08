@@ -2,7 +2,7 @@ import type { Address, Chain, Hex } from "viem";
 
 export type LiquidityVenueName =
   | "1inch"
-  | "canoe"
+  | "dexAggregator"
   | "erc20Wrapper"
   | "erc4626"
   | "liquidSwap"
@@ -11,7 +11,7 @@ export type LiquidityVenueName =
   | "uniswapV3"
   | "uniswapV4";
 
-export type PricerName = "canoe" | "chainlink" | "defillama" | "morphoApi" | "uniswapV3";
+export type PricerName = "dexAggregator" | "chainlink" | "defillama" | "morphoApi" | "uniswapV3";
 
 export type DataProviderName = "morphoApi" | "hyperIndex";
 

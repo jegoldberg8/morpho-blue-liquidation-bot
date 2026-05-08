@@ -247,7 +247,7 @@ export class LiquidationBot {
     let profitable: boolean | undefined;
 
     if (this.skipSimulation) {
-      // Simulation handled externally (e.g. by Canoe) — skip profit check too
+      // Simulation handled externally (e.g. by dex aggregator) — skip profit check too
       profitable = true;
     } else {
       try {

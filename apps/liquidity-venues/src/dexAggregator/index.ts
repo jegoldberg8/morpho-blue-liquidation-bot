@@ -1,4 +1,7 @@
-import { CANOE_BASE_URL, CANOE_CHAIN_NAMES } from "@morpho-blue-liquidation-bot/config";
+import {
+  DEX_AGGREGATOR_URL,
+  DEX_AGGREGATOR_CHAIN_NAMES,
+} from "@morpho-blue-liquidation-bot/config";
 import { ExecutorEncoder } from "executooor-viem";
 import { Account, Address, Chain, Client, erc20Abi, Hex, Transport } from "viem";
 import { readContract } from "viem/actions";
@@ -6,7 +9,7 @@ import { readContract } from "viem/actions";
 import { LiquidityVenue } from "../liquidityVenue";
 import { ToConvert } from "../types";
 
-import { CanoeSwapQuoteResponse } from "./types";
+import { DexAggregatorQuoteResponse } from "./types";
 
 const MARKETS_BY_CHAIN: Record<string, string[]> = {
   hyperevm: ["enso", "icecreamswap", "kyberswap", "openocean", "usor", "zeroex"],
@@ -39,10 +42,10 @@ const MARKETS_BY_CHAIN: Record<string, string[]> = {
   ],
 };
 
-export class CanoeVenue implements LiquidityVenue {
+export class DexAggregatorVenue implements LiquidityVenue {
   supportsRoute(encoder: ExecutorEncoder, src: Address, dst: Address) {
     if (src === dst) return false;
-    return encoder.client.chain.id in CANOE_CHAIN_NAMES;
+    return encoder.client.chain.id in DEX_AGGREGATOR_CHAIN_NAMES;
   }
 
   async convert(encoder: ExecutorEncoder, toConvert: ToConvert) {
@@ -50,7 +53,7 @@ export class CanoeVenue implements LiquidityVenue {
 
     try {
       const chainId = encoder.client.chain.id;
-      const chainName = CANOE_CHAIN_NAMES[chainId];
+      const chainName = DEX_AGGREGATOR_CHAIN_NAMES[chainId];
       if (!chainName) return toConvert;
 
       const markets = MARKETS_BY_CHAIN[chainName];
@@ -85,7 +88,7 @@ export class CanoeVenue implements LiquidityVenue {
         srcAmount: BigInt(quote.outAmountRaw),
       };
     } catch (error) {
-      console.error("Canoe: failed to fetch swap route", error);
+      console.error("DexAggregator: failed to fetch swap route", error);
       return toConvert;
     }
   }
@@ -97,7 +100,7 @@ export class CanoeVenue implements LiquidityVenue {
     dst: Address,
     inTokenAmount: string,
     account: Address,
-  ): Promise<CanoeSwapQuoteResponse | null> {
+  ): Promise<DexAggregatorQuoteResponse | null> {
     const body = JSON.stringify({
       chain: chainName,
       account,
@@ -112,7 +115,7 @@ export class CanoeVenue implements LiquidityVenue {
     try {
       return await Promise.any(
         markets.map(async (market) => {
-          const response = await fetch(`${CANOE_BASE_URL}/market/${market}/swap_quote`, {
+          const response = await fetch(`${DEX_AGGREGATOR_URL}/market/${market}/swap_quote`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body,
@@ -120,7 +123,7 @@ export class CanoeVenue implements LiquidityVenue {
 
           if (!response.ok) throw new Error(`${market}: ${response.status}`);
 
-          const data = (await response.json()) as CanoeSwapQuoteResponse;
+          const data = (await response.json()) as DexAggregatorQuoteResponse;
 
           if (!data.executionInfo?.trade?.data || !data.executionInfo.trade.to) {
             throw new Error(`${market}: no execution info`);

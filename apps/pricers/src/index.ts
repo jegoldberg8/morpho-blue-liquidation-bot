@@ -1,4 +1,4 @@
-export * from "./canoe";
+export * from "./dexAggregator";
 export * from "./chainlink";
 export * from "./defillama";
 export * from "./morphoApi";

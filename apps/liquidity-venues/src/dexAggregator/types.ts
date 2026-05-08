@@ -1,4 +1,4 @@
-export interface CanoeSwapQuoteResponse {
+export interface DexAggregatorQuoteResponse {
   inAmount: string;
   outAmount: string;
   inAmountRaw: string;

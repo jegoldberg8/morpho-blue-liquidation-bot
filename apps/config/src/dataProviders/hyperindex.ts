@@ -54,10 +54,10 @@ export const hyperIndexChainConfigs: Record<number, HyperIndexChainConfig> = {
     preLiquidationFactoryStartBlock: 10_273_494,
   },
   143: {
-    morphoStartBlock: 70_426_255,
-    metaMorphoFactoryStartBlock: 70_425_540,
-    adaptiveCurveIrmStartBlock: 70_425_592,
-    preLiquidationFactoryStartBlock: 70_425_603,
+    morphoStartBlock: 31_907_457,
+    metaMorphoFactoryStartBlock: 32_320_327,
+    adaptiveCurveIrmStartBlock: 31_907_457,
+    preLiquidationFactoryStartBlock: 32_321_504,
   },
   999: {
     morphoStartBlock: 1_988_429,
