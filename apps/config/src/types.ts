@@ -2,6 +2,7 @@ import type { Address, Chain, Hex } from "viem";
 
 export type LiquidityVenueName =
   | "1inch"
+  | "aggregator"
   | "enso"
   | "erc20Wrapper"
   | "erc4626"

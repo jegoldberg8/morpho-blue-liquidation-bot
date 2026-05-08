@@ -1,6 +1,7 @@
 import type { LiquidityVenueName } from "@morpho-blue-liquidation-bot/config";
 
 import { OneInch } from "./1inch";
+import { AggregatorVenue } from "./aggregator";
 import { EnsoVenue } from "./enso";
 import { Erc20Wrapper } from "./erc20Wrapper";
 import { Erc4626 } from "./erc4626";
@@ -20,6 +21,8 @@ import { ZeroExVenue } from "./zeroex";
  */
 export function createLiquidityVenue(liquidityVenueName: LiquidityVenueName): LiquidityVenue {
   switch (liquidityVenueName) {
+    case "aggregator":
+      return new AggregatorVenue();
     case "enso":
       return new EnsoVenue();
     case "erc20Wrapper":

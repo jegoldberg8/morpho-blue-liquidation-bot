@@ -1,3 +1,4 @@
+export * from "./aggregator";
 export * from "./enso";
 export * from "./nordstern";
 export * from "./uniswapV3";
