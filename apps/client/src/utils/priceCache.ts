@@ -105,8 +105,10 @@ class PriceCache {
         count++;
       }
       console.log(`[PriceCache] chain=${chainId}: ${count} token prices cached`);
-    } catch {
-      console.log(`[PriceCache] chain=${chainId}: all sources failed`);
+    } catch (err) {
+      const agg = err as AggregateError;
+      const reasons = agg.errors?.map((e: Error) => e.message).join(", ") ?? String(err);
+      console.log(`[PriceCache] chain=${chainId}: all sources failed: ${reasons}`);
     }
   }
 
