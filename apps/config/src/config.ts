@@ -124,7 +124,7 @@ export const chainConfigs: Record<number, Config> = {
       vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
       liquidityVenues: ["aggregator", "erc20Wrapper", "erc4626"],
-      pricers: ["nordstern", "morphoApi"],
+      pricers: ["nordstern", "defillama", "morphoApi"],
       liquidationBufferBps: 50,
       useFlashbots: false,
       minCollateralUsd: 1,

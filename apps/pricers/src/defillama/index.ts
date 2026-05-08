@@ -9,6 +9,7 @@ const CHAIN_SLUGS: Record<number, string> = {
   10: "optimism",
   130: "unichain",
   143: "monad",
+  480: "wc",
   999: "hyperliquid",
   1329: "sei",
   8453: "base",

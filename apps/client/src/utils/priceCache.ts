@@ -9,6 +9,7 @@ const DEFILLAMA_SLUGS: Record<number, string> = {
   10: "optimism",
   130: "unichain",
   143: "monad",
+  480: "wc",
   999: "hyperliquid",
   1329: "sei",
   8453: "base",
@@ -59,17 +60,32 @@ class PriceCache {
     }, REFRESH_INTERVAL_MS);
   }
 
-  private async fetchNordstern(chainId: number, tokens: string[]): Promise<Record<string, number>> {
+  private async fetchNordstern(
+    chainId: number,
+    tokens: string[],
+    retries = 3,
+  ): Promise<Record<string, number>> {
     const tokenList = tokens.join(",");
-    const response = await fetch(`${NORDSTERN_URL}/prices/${chainId}?token=${tokenList}`);
-    if (!response.ok) throw new Error(`nordstern ${response.status}`);
-    const data = (await response.json()) as Record<string, number>;
-    const result: Record<string, number> = {};
-    for (const [addr, price] of Object.entries(data)) {
-      if (price > 0) result[addr.toLowerCase()] = price;
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const response = await fetch(`${NORDSTERN_URL}/prices/${chainId}?token=${tokenList}`);
+      if (response.status === 429) {
+        const delay = (attempt + 1) * 5000;
+        console.log(
+          `[PriceCache] nordstern chain=${chainId} rate limited, retrying in ${delay / 1000}s`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      if (!response.ok) throw new Error(`nordstern ${response.status}`);
+      const data = (await response.json()) as Record<string, number>;
+      const result: Record<string, number> = {};
+      for (const [addr, price] of Object.entries(data)) {
+        if (price > 0) result[addr.toLowerCase()] = price;
+      }
+      if (Object.keys(result).length === 0) throw new Error("nordstern no prices");
+      return result;
     }
-    if (Object.keys(result).length === 0) throw new Error("nordstern no prices");
-    return result;
+    throw new Error("nordstern 429 after retries");
   }
 
   private async fetchDeFiLlama(chainId: number, tokens: string[]): Promise<Record<string, number>> {
@@ -119,6 +135,7 @@ class PriceCache {
       if (tokens.length === 0) continue;
 
       await this.fetchChainPrices(chainId, tokens);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 }
