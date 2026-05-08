@@ -2,8 +2,8 @@ import { PricerName } from "@morpho-blue-liquidation-bot/config";
 
 import { ChainlinkPricer } from "./chainlink";
 import { DefiLlamaPricer } from "./defillama";
-import { DexAggregatorPricer } from "./dexAggregator";
 import { MorphoApi } from "./morphoApi";
+import { NordsternPricer } from "./nordstern";
 import { Pricer } from "./pricer";
 import { UniswapV3Pricer } from "./uniswapV3";
 
@@ -14,12 +14,12 @@ import { UniswapV3Pricer } from "./uniswapV3";
  */
 export function createPricer(pricerName: PricerName): Pricer {
   switch (pricerName) {
-    case "dexAggregator":
-      return new DexAggregatorPricer();
     case "defillama":
       return new DefiLlamaPricer();
     case "chainlink":
       return new ChainlinkPricer();
+    case "nordstern":
+      return new NordsternPricer();
     case "morphoApi":
       return new MorphoApi();
     case "uniswapV3":

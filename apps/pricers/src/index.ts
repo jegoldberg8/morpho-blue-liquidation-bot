@@ -1,5 +1,5 @@
-export * from "./dexAggregator";
 export * from "./chainlink";
+export * from "./nordstern";
 export * from "./defillama";
 export * from "./morphoApi";
 export * from "./uniswapV3";

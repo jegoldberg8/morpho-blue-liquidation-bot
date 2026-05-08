@@ -1,12 +1,12 @@
 import type { LiquidityVenueName } from "@morpho-blue-liquidation-bot/config";
 
 import { OneInch } from "./1inch";
-import { DexAggregatorVenue } from "./dexAggregator";
 import { Erc20Wrapper } from "./erc20Wrapper";
 import { Erc4626 } from "./erc4626";
 import { LiquidityVenue } from "./liquidityVenue";
 import { LiquidSwapVenue } from "./liquidSwap";
 import { MidasVenue } from "./midas";
+import { NordsternVenue } from "./nordstern";
 import { PendlePTVenue } from "./pendlePT";
 import { UniswapV3Venue } from "./uniswapV3";
 import { UniswapV4Venue } from "./uniswapV4";
@@ -18,8 +18,6 @@ import { UniswapV4Venue } from "./uniswapV4";
  */
 export function createLiquidityVenue(liquidityVenueName: LiquidityVenueName): LiquidityVenue {
   switch (liquidityVenueName) {
-    case "dexAggregator":
-      return new DexAggregatorVenue();
     case "erc20Wrapper":
       return new Erc20Wrapper();
     case "erc4626":
@@ -28,6 +26,8 @@ export function createLiquidityVenue(liquidityVenueName: LiquidityVenueName): Li
       return new UniswapV3Venue();
     case "uniswapV4":
       return new UniswapV4Venue();
+    case "nordstern":
+      return new NordsternVenue();
     case "liquidSwap":
       return new LiquidSwapVenue();
     case "midas":
