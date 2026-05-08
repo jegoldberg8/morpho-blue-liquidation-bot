@@ -174,16 +174,27 @@ export class AggregatorVenue implements LiquidityVenue {
     dst: Address,
     amount: bigint,
     from: Address,
+    retries = 3,
   ): Promise<QuoteResult | null> {
-    try {
-      return await Promise.any([
-        fetchEnso(chainId, src, dst, amount, from),
-        fetchNordstern(chainId, src, dst, amount, from),
-        fetchZeroEx(chainId, src, dst, amount, from),
-        fetchLiFi(chainId, src, dst, amount, from),
-      ]);
-    } catch {
-      return null;
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        return await Promise.any([
+          fetchEnso(chainId, src, dst, amount, from),
+          fetchNordstern(chainId, src, dst, amount, from),
+          fetchZeroEx(chainId, src, dst, amount, from),
+          fetchLiFi(chainId, src, dst, amount, from),
+        ]);
+      } catch (err) {
+        const agg = err as AggregateError;
+        const all429 = agg.errors?.every((e: Error) => e.message.includes("429"));
+        if (all429 && attempt < retries - 1) {
+          const delay = (attempt + 1) * 3000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        return null;
+      }
     }
+    return null;
   }
 }
