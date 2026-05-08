@@ -44,7 +44,7 @@ import { Flashbots } from "./utils/flashbots.js";
 import { LiquidationEncoder } from "./utils/LiquidationEncoder.js";
 import { DEFAULT_LIQUIDATION_BUFFER_BPS, WAD, wMulDown } from "./utils/maths.js";
 import { priceCache } from "./utils/priceCache.js";
-import { sendTelegramAlert } from "./utils/telegram.js";
+import { sendLiquidationAlert } from "./utils/telegram.js";
 
 export interface LiquidationBotInputs {
   logTag: string;
@@ -172,14 +172,28 @@ export class LiquidationBot {
     const calls = encoder.flush();
 
     try {
+      const balanceBefore = await readContract(this.client, {
+        address: marketParams.loanToken,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [this.client.account.address],
+      });
+
       const result = await this.handleTx(encoder, calls, marketParams, badDebtPosition);
 
       if (result === false) {
         console.log(`${this.logTag}ℹ️ Skipped ${position.user} on ${marketId} (not profitable)`);
       } else if (result) {
-        const msg = `${this.logTag}Liquidated ${position.user} on ${marketId}\ntx: ${result}`;
-        console.log(msg);
-        void sendTelegramAlert(`✅ ${msg}`);
+        console.log(`${this.logTag}Liquidated ${position.user} on ${marketId}\ntx: ${result}`);
+        void sendLiquidationAlert({
+          logTag: this.logTag,
+          user: position.user,
+          marketId,
+          txHash: result as string,
+          loanToken: marketParams.loanToken,
+          balanceBefore,
+          client: this.client,
+        });
       }
     } catch (error) {
       console.error(`${this.logTag}Failed to liquidate ${position.user} on ${marketId}`, error);
