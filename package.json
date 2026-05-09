@@ -21,7 +21,7 @@
     "liquidate:indexer": "pnpm build && tsx apps/client/src/script.ts --env-file=.env --provider=hyperIndex",
     "skim": "pnpm build && tsx apps/client/src/skim.ts --env-file=.env",
     "indexer:generate": "pnpm build:config && tsx --env-file=.env apps/hyperindex/scripts/generate-config.ts",
-    "indexer:start": "cd apps/hyperindex && export $(grep -v '^#' ../../.env | xargs) && TUI_OFF=true pnpm dev",
+    "indexer:start": "cd apps/hyperindex && export $(grep -v '^#' ../../.env | xargs) && pnpm dev",
     "indexer:setup": "pnpm indexer:generate && pnpm indexer:start",
     "indexer:stop": "pnpm --filter @morpho-blue-liquidation-bot/hyperindex stop"
   },
