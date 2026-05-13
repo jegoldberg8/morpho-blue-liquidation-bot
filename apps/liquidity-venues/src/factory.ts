@@ -5,6 +5,7 @@ import { AggregatorVenue } from "./aggregator";
 import { EnsoVenue } from "./enso";
 import { Erc20Wrapper } from "./erc20Wrapper";
 import { Erc4626 } from "./erc4626";
+import { HyperFlowVenue } from "./hyperflow";
 import { LiquidityVenue } from "./liquidityVenue";
 import { LiquidSwapVenue } from "./liquidSwap";
 import { MidasVenue } from "./midas";
@@ -29,6 +30,8 @@ export function createLiquidityVenue(liquidityVenueName: LiquidityVenueName): Li
       return new Erc20Wrapper();
     case "erc4626":
       return new Erc4626();
+    case "hyperflow":
+      return new HyperFlowVenue();
     case "uniswapV3":
       return new UniswapV3Venue();
     case "uniswapV4":

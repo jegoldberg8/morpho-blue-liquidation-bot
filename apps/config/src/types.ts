@@ -5,6 +5,7 @@ export type LiquidityVenueName =
   | "aggregator"
   | "enso"
   | "erc20Wrapper"
+  | "hyperflow"
   | "erc4626"
   | "liquidSwap"
   | "midas"

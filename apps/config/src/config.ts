@@ -137,7 +137,7 @@ export const chainConfigs: Record<number, Config> = {
     options: {
       dataProvider: "hyperIndex",
       vaultWhitelist: "all",
-      liquidityVenues: ["aggregator", "erc20Wrapper", "erc4626"],
+      liquidityVenues: ["hyperflow", "aggregator", "erc20Wrapper", "erc4626"],
       pricers: ["nordstern"],
       additionalMarketsWhitelist: [],
       liquidationBufferBps: 50,
