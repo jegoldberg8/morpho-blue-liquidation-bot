@@ -80,7 +80,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: unichain,
     wNative: "0x4200000000000000000000000000000000000006",
     options: {
-      dataProvider: "morphoApi",
+      dataProvider: "hyperIndex",
       vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
       liquidityVenues: ["aggregator", "erc20Wrapper", "erc4626"],
@@ -135,7 +135,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: hyperevm,
     wNative: "0x5555555555555555555555555555555555555555",
     options: {
-      dataProvider: "morphoApi",
+      dataProvider: "hyperIndex",
       vaultWhitelist: "all",
       liquidityVenues: ["aggregator", "erc20Wrapper", "erc4626"],
       pricers: ["nordstern"],
@@ -165,7 +165,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: optimism,
     wNative: "0x4200000000000000000000000000000000000006",
     options: {
-      dataProvider: "morphoApi",
+      dataProvider: "hyperIndex",
       vaultWhitelist: "all",
       additionalMarketsWhitelist: [],
       liquidityVenues: ["aggregator", "erc20Wrapper", "erc4626"],
