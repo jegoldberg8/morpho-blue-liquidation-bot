@@ -135,7 +135,7 @@ export const chainConfigs: Record<number, Config> = {
     chain: hyperevm,
     wNative: "0x5555555555555555555555555555555555555555",
     options: {
-      dataProvider: "hyperIndex",
+      dataProvider: "morphoApi",
       vaultWhitelist: "all",
       liquidityVenues: ["hyperflow", "aggregator", "erc20Wrapper", "erc4626"],
       pricers: ["nordstern"],
