@@ -131,6 +131,15 @@ export class LiquidationBot {
 
     const marketId = MarketUtils.getMarketId(marketParams);
 
+    if (
+      this.positionLiquidationCooldownMechanism?.hasPositionChanged(
+        marketId,
+        position.user,
+        seizableCollateral,
+      )
+    ) {
+      this.positionLiquidationCooldownMechanism.clearCooldown(marketId, position.user);
+    }
     if (!this.checkCooldown(marketId, position.user)) return;
 
     // Skip dust positions using cached prices (no external calls)
@@ -150,7 +159,11 @@ export class LiquidationBot {
     const encoder = new LiquidationEncoder(executorAddress, client);
 
     if (!(await this.convertCollateralToLoan(marketParams, reducedCollateral, encoder))) {
-      this.positionLiquidationCooldownMechanism?.cooldownPosition(marketId, position.user);
+      this.positionLiquidationCooldownMechanism?.cooldownPosition(
+        marketId,
+        position.user,
+        seizableCollateral,
+      );
       return;
     }
 

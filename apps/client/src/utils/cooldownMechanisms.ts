@@ -21,9 +21,24 @@ export class PositionLiquidationCooldownMechanism {
     return this.positionReadyAt[marketId][account] <= Date.now() / 1000;
   }
 
-  cooldownPosition(marketId: Hex, account: Address) {
+  private lastSeizable: Record<string, bigint> = {};
+
+  cooldownPosition(marketId: Hex, account: Address, seizableCollateral: bigint) {
     this.positionReadyAt[marketId] ??= {};
     this.positionReadyAt[marketId][account] = Date.now() / 1000 + this.cooldownPeriod;
+    this.lastSeizable[`${marketId}-${account}`] = seizableCollateral;
+  }
+
+  hasPositionChanged(marketId: Hex, account: Address, seizableCollateral: bigint) {
+    const key = `${marketId}-${account}`;
+    const last = this.lastSeizable[key];
+    return last !== undefined && last !== seizableCollateral;
+  }
+
+  clearCooldown(marketId: Hex, account: Address) {
+    if (this.positionReadyAt[marketId]) {
+      this.positionReadyAt[marketId][account] = 0;
+    }
   }
 }
 
