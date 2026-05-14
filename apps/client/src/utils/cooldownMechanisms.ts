@@ -18,12 +18,12 @@ export class PositionLiquidationCooldownMechanism {
       this.positionReadyAt[marketId][account] = 0;
     }
 
-    if (this.positionReadyAt[marketId][account] > Date.now() / 1000) {
-      return false;
-    }
+    return this.positionReadyAt[marketId][account] <= Date.now() / 1000;
+  }
 
+  cooldownPosition(marketId: Hex, account: Address) {
+    this.positionReadyAt[marketId] ??= {};
     this.positionReadyAt[marketId][account] = Date.now() / 1000 + this.cooldownPeriod;
-    return true;
   }
 }
 

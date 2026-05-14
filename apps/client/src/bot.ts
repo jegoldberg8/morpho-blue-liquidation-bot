@@ -149,7 +149,10 @@ export class LiquidationBot {
 
     const encoder = new LiquidationEncoder(executorAddress, client);
 
-    if (!(await this.convertCollateralToLoan(marketParams, reducedCollateral, encoder))) return;
+    if (!(await this.convertCollateralToLoan(marketParams, reducedCollateral, encoder))) {
+      this.positionLiquidationCooldownMechanism?.cooldownPosition(marketId, position.user);
+      return;
+    }
 
     encoder.erc20Approve(marketParams.loanToken, this.chainAddresses.morpho, maxUint256);
 
