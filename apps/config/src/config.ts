@@ -21,7 +21,7 @@ export const ALWAYS_REALIZE_BAD_DEBT = false; // true if you want to always real
 
 export const MARKETS_FETCHING_COOLDOWN_PERIOD = 60 * 60 * 24; // 24 hours (1 day)
 export const POSITION_LIQUIDATION_COOLDOWN_ENABLED = true; // true if you want to enable the cooldown mechanism
-export const POSITION_LIQUIDATION_COOLDOWN_PERIOD = 60 * 60; // 1 hour
+export const POSITION_LIQUIDATION_COOLDOWN_PERIOD = 60 * 30; // 30 minutes
 
 /// Chains configurations
 
