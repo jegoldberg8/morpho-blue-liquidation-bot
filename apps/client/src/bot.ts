@@ -168,7 +168,9 @@ export class LiquidationBot {
 
     const encoder = new LiquidationEncoder(executorAddress, client);
 
-    if (!(await this.convertCollateralToLoan(marketParams, reducedCollateral, encoder))) {
+    const swapResult = await this.convertCollateralToLoan(marketParams, reducedCollateral, encoder);
+    if (!swapResult) {
+      console.log(`${this.logTag}No swap route for ${position.user} on ${marketId}`);
       this.positionLiquidationCooldownMechanism?.cooldownPosition(
         marketId,
         position.user,
