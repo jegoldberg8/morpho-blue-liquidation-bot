@@ -111,6 +111,7 @@ class PriceCache {
   private async fetchChainPrices(chainId: number, tokens: string[]): Promise<void> {
     const merged: Record<string, number> = {};
 
+    // Batch fetch from both sources
     const results = await Promise.allSettled([
       this.fetchNordstern(chainId, tokens),
       this.fetchDeFiLlama(chainId, tokens),
@@ -122,6 +123,25 @@ class PriceCache {
           merged[addr] ??= price;
         }
       }
+    }
+
+    // Individually fetch any tokens that batch missed
+    const missing = tokens.filter((t) => !(t in merged));
+    if (missing.length > 0) {
+      await Promise.allSettled(
+        missing.map(async (token) => {
+          try {
+            const res = await fetch(`${NORDSTERN_URL}/prices/${chainId}?token=${token}`);
+            if (!res.ok) return;
+            const data = (await res.json()) as Record<string, number>;
+            for (const [addr, price] of Object.entries(data)) {
+              if (price > 0) merged[addr.toLowerCase()] = price;
+            }
+          } catch {
+            // skip
+          }
+        }),
+      );
     }
 
     if (Object.keys(merged).length === 0) {
