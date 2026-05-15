@@ -128,6 +128,11 @@ class PriceCache {
     // Individually fetch any tokens that batch missed
     const missing = tokens.filter((t) => !(t in merged));
     if (missing.length > 0) {
+      console.log(
+        `[PriceCache] chain=${chainId}: ${missing.length} unpriced: ${missing.join(", ")}`,
+      );
+    }
+    if (missing.length > 0) {
       await Promise.allSettled(
         missing.map(async (token) => {
           try {
