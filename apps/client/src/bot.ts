@@ -116,13 +116,25 @@ export class LiquidationBot {
     const { liquidatablePositions, preLiquidatablePositions } =
       await this.dataProvider.fetchLiquidatablePositions(this.client, this.coveredMarkets);
 
-    if (liquidatablePositions.length > 0 || preLiquidatablePositions.length > 0) {
+    const viable = liquidatablePositions.filter((p) => {
+      const collateralToken = p.market.params.collateralToken;
+      const price = priceCache.getPrice(this.chainId, collateralToken);
+      if (price === undefined) return false;
+      if (this.minCollateralUsd > 0) {
+        const decimals = priceCache.getDecimals(this.chainId, collateralToken);
+        const usd = parseFloat(formatUnits(p.seizableCollateral ?? 0n, decimals)) * price;
+        if (usd < this.minCollateralUsd) return false;
+      }
+      return true;
+    });
+
+    if (viable.length > 0 || preLiquidatablePositions.length > 0) {
       console.log(
-        `${this.logTag}Found ${liquidatablePositions.length} liquidatable, ${preLiquidatablePositions.length} pre-liquidatable positions`,
+        `${this.logTag}Found ${viable.length} liquidatable, ${preLiquidatablePositions.length} pre-liquidatable positions (${liquidatablePositions.length - viable.length} filtered)`,
       );
     }
 
-    for (const position of liquidatablePositions) {
+    for (const position of viable) {
       await this.liquidate(position);
     }
     for (const position of preLiquidatablePositions) {
