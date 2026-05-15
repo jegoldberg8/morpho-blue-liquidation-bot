@@ -116,6 +116,12 @@ export class LiquidationBot {
     const { liquidatablePositions, preLiquidatablePositions } =
       await this.dataProvider.fetchLiquidatablePositions(this.client, this.coveredMarkets);
 
+    if (liquidatablePositions.length > 0 || preLiquidatablePositions.length > 0) {
+      console.log(
+        `${this.logTag}Found ${liquidatablePositions.length} liquidatable, ${preLiquidatablePositions.length} pre-liquidatable positions`,
+      );
+    }
+
     for (const position of liquidatablePositions) {
       await this.liquidate(position);
     }
