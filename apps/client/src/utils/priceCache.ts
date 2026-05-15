@@ -109,23 +109,36 @@ class PriceCache {
   }
 
   private async fetchChainPrices(chainId: number, tokens: string[]): Promise<void> {
-    try {
-      const prices = await Promise.any([
-        this.fetchNordstern(chainId, tokens),
-        this.fetchDeFiLlama(chainId, tokens),
-      ]);
+    const merged: Record<string, number> = {};
 
-      let count = 0;
-      for (const [addr, price] of Object.entries(prices)) {
-        this.prices[`${chainId}-${addr}`] = price;
-        count++;
+    const results = await Promise.allSettled([
+      this.fetchNordstern(chainId, tokens),
+      this.fetchDeFiLlama(chainId, tokens),
+    ]);
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        for (const [addr, price] of Object.entries(result.value)) {
+          merged[addr] ??= price;
+        }
       }
-      console.log(`[PriceCache] chain=${chainId}: ${count} token prices cached`);
-    } catch (err) {
-      const agg = err as AggregateError;
-      const reasons = agg.errors?.map((e: Error) => e.message).join(", ") ?? String(err);
-      console.log(`[PriceCache] chain=${chainId}: all sources failed: ${reasons}`);
     }
+
+    if (Object.keys(merged).length === 0) {
+      const reasons = results
+        .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+        .map((r) => (r.reason as Error).message)
+        .join(", ");
+      console.log(`[PriceCache] chain=${chainId}: all sources failed: ${reasons}`);
+      return;
+    }
+
+    for (const [addr, price] of Object.entries(merged)) {
+      this.prices[`${chainId}-${addr}`] = price;
+    }
+    console.log(
+      `[PriceCache] chain=${chainId}: ${Object.keys(merged).length}/${tokens.length} token prices cached`,
+    );
   }
 
   private async refreshAll() {
