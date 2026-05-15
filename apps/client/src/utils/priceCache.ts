@@ -2,6 +2,7 @@ import type { Address } from "viem";
 
 const NORDSTERN_URL = "https://api.nordstern.finance";
 const DEFILLAMA_URL = "https://coins.llama.fi/prices/current";
+const LIFI_TOKEN_URL = "https://li.quest/v1/token";
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const DEFILLAMA_SLUGS: Record<number, string> = {
@@ -125,27 +126,27 @@ class PriceCache {
       }
     }
 
-    // Individually fetch any tokens that batch missed
+    // Individually fetch any tokens that batch missed via LiFi
     const missing = tokens.filter((t) => !(t in merged));
-    if (missing.length > 0) {
-      console.log(
-        `[PriceCache] chain=${chainId}: ${missing.length} unpriced: ${missing.join(", ")}`,
-      );
-    }
     if (missing.length > 0) {
       await Promise.allSettled(
         missing.map(async (token) => {
           try {
-            const res = await fetch(`${NORDSTERN_URL}/prices/${chainId}?token=${token}`);
+            const res = await fetch(`${LIFI_TOKEN_URL}?chain=${chainId}&token=${token}`);
             if (!res.ok) return;
-            const data = (await res.json()) as Record<string, number>;
-            for (const [addr, price] of Object.entries(data)) {
-              if (price > 0) merged[addr.toLowerCase()] = price;
-            }
+            const data = (await res.json()) as { priceUSD?: string };
+            const price = parseFloat(data.priceUSD ?? "0");
+            if (price > 0) merged[token.toLowerCase()] = price;
           } catch {
             // skip
           }
         }),
+      );
+    }
+    const stillMissing = tokens.filter((t) => !(t in merged));
+    if (stillMissing.length > 0) {
+      console.log(
+        `[PriceCache] chain=${chainId}: ${stillMissing.length} unpriced: ${stillMissing.join(", ")}`,
       );
     }
 
