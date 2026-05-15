@@ -2,6 +2,7 @@ import { PricerName } from "@morpho-blue-liquidation-bot/config";
 
 import { ChainlinkPricer } from "./chainlink";
 import { DefiLlamaPricer } from "./defillama";
+import { LiFiPricer } from "./lifi";
 import { MorphoApi } from "./morphoApi";
 import { NordsternPricer } from "./nordstern";
 import { Pricer } from "./pricer";
@@ -18,6 +19,8 @@ export function createPricer(pricerName: PricerName): Pricer {
       return new DefiLlamaPricer();
     case "chainlink":
       return new ChainlinkPricer();
+    case "lifi":
+      return new LiFiPricer();
     case "nordstern":
       return new NordsternPricer();
     case "morphoApi":

@@ -15,7 +15,13 @@ export type LiquidityVenueName =
   | "uniswapV4"
   | "zeroex";
 
-export type PricerName = "chainlink" | "defillama" | "morphoApi" | "nordstern" | "uniswapV3";
+export type PricerName =
+  | "chainlink"
+  | "defillama"
+  | "lifi"
+  | "morphoApi"
+  | "nordstern"
+  | "uniswapV3";
 
 export type DataProviderName = "morphoApi" | "hyperIndex";
 
