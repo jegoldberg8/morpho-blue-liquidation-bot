@@ -158,6 +158,10 @@ export class LiquidationBot {
       }
     }
 
+    console.log(
+      `${this.logTag}Attempting ${position.user} on ${marketId} (seizable: ${seizableCollateral})`,
+    );
+
     const reducedCollateral = this.decreaseSeizableCollateral(seizableCollateral, badDebtPosition);
 
     const { client, executorAddress } = this;
