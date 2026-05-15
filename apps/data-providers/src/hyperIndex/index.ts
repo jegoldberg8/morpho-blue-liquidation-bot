@@ -300,6 +300,10 @@ export class HyperIndexDataProvider implements DataProvider {
         }),
       ]);
 
+      console.log(
+        `[Chain ${client.chain.id}] Fetched ${allPositions.length} borrowing positions, ${marketsResponse.Market.length} markets`,
+      );
+
       if (allPositions.length === 0) {
         return { liquidatablePositions: [], preLiquidatablePositions: [] };
       }
@@ -376,6 +380,10 @@ export class HyperIndexDataProvider implements DataProvider {
         const timestamp = now > lastUpdate ? now : lastUpdate;
         marketsMap.set(m.id, market.accrueInterest(timestamp));
       }
+
+      console.log(
+        `[Chain ${client.chain.id}] Fetched ${oraclePrices.size} oracle prices (${[...oraclePrices.values()].filter((v) => v === undefined).length} failed)`,
+      );
 
       // 6. Build liquidatable positions
       const liquidatablePositions = allPositions

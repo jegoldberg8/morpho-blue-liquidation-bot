@@ -116,6 +116,12 @@ export class LiquidationBot {
     const { liquidatablePositions, preLiquidatablePositions } =
       await this.dataProvider.fetchLiquidatablePositions(this.client, this.coveredMarkets);
 
+    if (liquidatablePositions.length === 0 && preLiquidatablePositions.length === 0) {
+      console.log(
+        `${this.logTag}No liquidatable positions found (${this.coveredMarkets.length} markets)`,
+      );
+    }
+
     const viable = liquidatablePositions.filter((p) => {
       const collateralToken = p.market.params.collateralToken;
       const price = priceCache.getPrice(this.chainId, collateralToken);
