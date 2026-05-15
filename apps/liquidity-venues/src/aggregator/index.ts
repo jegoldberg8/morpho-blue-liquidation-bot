@@ -11,6 +11,8 @@ const ZEROX_URL = "https://api.0x.org/swap/allowance-holder/quote";
 const ZEROX_KEY = process.env.ZEROX_API_KEY ?? "";
 const LIFI_URL = "https://li.quest/v1/quote";
 
+const SLIPPAGE_TIERS_BPS = [1, 50, 150];
+
 interface QuoteResult {
   toAmount: bigint;
   to: Address;
@@ -24,6 +26,7 @@ async function fetchEnso(
   dst: Address,
   amount: bigint,
   from: Address,
+  slippageBps: number,
 ): Promise<QuoteResult> {
   if (!ENSO_KEY) throw new Error("no key");
   const params = new URLSearchParams({
@@ -33,7 +36,7 @@ async function fetchEnso(
     tokenOut: dst,
     amountIn: amount.toString(),
     routingStrategy: "router",
-    slippage: "300",
+    slippage: slippageBps.toString(),
   });
   const res = await fetch(`${ENSO_URL}?${params}`, {
     headers: { Authorization: `Bearer ${ENSO_KEY}` },
@@ -58,9 +61,11 @@ async function fetchNordstern(
   dst: Address,
   amount: bigint,
   from: Address,
+  slippageBps: number,
 ): Promise<QuoteResult> {
+  const slippagePct = slippageBps / 100;
   const res = await fetch(
-    `${NORDSTERN_URL}/aggregator/${chainId}?src=${src}&dst=${dst}&amount=${amount}&from=${from}&slippage=0.5`,
+    `${NORDSTERN_URL}/aggregator/${chainId}?src=${src}&dst=${dst}&amount=${amount}&from=${from}&slippage=${slippagePct}`,
   );
   if (!res.ok) throw new Error(`nordstern ${res.status}`);
   const data = (await res.json()) as {
@@ -83,6 +88,7 @@ async function fetchZeroEx(
   dst: Address,
   amount: bigint,
   taker: Address,
+  slippageBps: number,
 ): Promise<QuoteResult> {
   if (!ZEROX_KEY) throw new Error("no key");
   const params = new URLSearchParams({
@@ -91,7 +97,7 @@ async function fetchZeroEx(
     buyToken: dst,
     sellAmount: amount.toString(),
     taker,
-    slippageBps: "300",
+    slippageBps: slippageBps.toString(),
   });
   const res = await fetch(`${ZEROX_URL}?${params}`, {
     headers: { "0x-api-key": ZEROX_KEY, "0x-version": "v2" },
@@ -118,7 +124,9 @@ async function fetchLiFi(
   dst: Address,
   amount: bigint,
   from: Address,
+  slippageBps: number,
 ): Promise<QuoteResult> {
+  const slippageFraction = slippageBps / 10000;
   const params = new URLSearchParams({
     fromChain: chainId.toString(),
     toChain: chainId.toString(),
@@ -126,7 +134,7 @@ async function fetchLiFi(
     toToken: dst,
     fromAddress: from,
     fromAmount: amount.toString(),
-    slippage: "0.03",
+    slippage: slippageFraction.toString(),
     skipSimulation: "true",
   });
   const res = await fetch(`${LIFI_URL}?${params}`);
@@ -156,13 +164,24 @@ export class AggregatorVenue implements LiquidityVenue {
       if (srcAmount <= 0n) return toConvert;
 
       const chainId = encoder.client.chain.id;
-      const quote = await this.fetchBestQuote(chainId, src, dst, srcAmount, encoder.address);
-      if (!quote) return toConvert;
 
-      encoder.erc20Approve(src, quote.to, srcAmount);
-      encoder.pushCall(quote.to, quote.value, quote.data);
+      for (const slippageBps of SLIPPAGE_TIERS_BPS) {
+        const quote = await this.fetchBestQuote(
+          chainId,
+          src,
+          dst,
+          srcAmount,
+          encoder.address,
+          slippageBps,
+        );
+        if (quote) {
+          encoder.erc20Approve(src, quote.to, srcAmount);
+          encoder.pushCall(quote.to, quote.value, quote.data);
+          return { src: dst, dst, srcAmount: quote.toAmount };
+        }
+      }
 
-      return { src: dst, dst, srcAmount: quote.toAmount };
+      return toConvert;
     } catch {
       return toConvert;
     }
@@ -174,30 +193,22 @@ export class AggregatorVenue implements LiquidityVenue {
     dst: Address,
     amount: bigint,
     from: Address,
-    retries = 3,
+    slippageBps: number,
   ): Promise<QuoteResult | null> {
-    for (let attempt = 0; attempt < retries; attempt++) {
-      try {
-        return await Promise.any([
-          fetchEnso(chainId, src, dst, amount, from),
-          fetchNordstern(chainId, src, dst, amount, from),
-          fetchZeroEx(chainId, src, dst, amount, from),
-          fetchLiFi(chainId, src, dst, amount, from),
-        ]);
-      } catch (err) {
-        const agg = err as AggregateError;
-        const reasons = agg.errors?.map((e: Error) => e.message).join(", ") ?? String(err);
-        const all429 = agg.errors?.every((e: Error) => e.message.includes("429"));
-        if (all429 && attempt < retries - 1) {
-          const delay = (attempt + 1) * 3000;
-          console.log(`[Aggregator] chain=${chainId} all 429, retrying in ${delay / 1000}s`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-        console.log(`[Aggregator] chain=${chainId} ${src}->${dst} failed: ${reasons}`);
-        return null;
+    try {
+      return await Promise.any([
+        fetchEnso(chainId, src, dst, amount, from, slippageBps),
+        fetchNordstern(chainId, src, dst, amount, from, slippageBps),
+        fetchZeroEx(chainId, src, dst, amount, from, slippageBps),
+        fetchLiFi(chainId, src, dst, amount, from, slippageBps),
+      ]);
+    } catch (err) {
+      const agg = err as AggregateError;
+      const all429 = agg.errors?.every((e: Error) => e.message.includes("429"));
+      if (all429) {
+        console.log(`[Aggregator] chain=${chainId} all 429 at ${slippageBps}bps`);
       }
+      return null;
     }
-    return null;
   }
 }
