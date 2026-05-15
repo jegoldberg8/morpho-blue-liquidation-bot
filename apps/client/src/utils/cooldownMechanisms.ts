@@ -32,7 +32,10 @@ export class PositionLiquidationCooldownMechanism {
   hasPositionChanged(marketId: Hex, account: Address, seizableCollateral: bigint) {
     const key = `${marketId}-${account}`;
     const last = this.lastSeizable[key];
-    return last !== undefined && last !== seizableCollateral;
+    if (last === undefined || last === 0n) return false;
+    // Only consider changed if >1% difference (ignore interest accrual noise)
+    const diff = seizableCollateral > last ? seizableCollateral - last : last - seizableCollateral;
+    return diff * 100n > last;
   }
 
   clearCooldown(marketId: Hex, account: Address) {
