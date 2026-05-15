@@ -186,12 +186,15 @@ export class AggregatorVenue implements LiquidityVenue {
         ]);
       } catch (err) {
         const agg = err as AggregateError;
+        const reasons = agg.errors?.map((e: Error) => e.message).join(", ") ?? String(err);
         const all429 = agg.errors?.every((e: Error) => e.message.includes("429"));
         if (all429 && attempt < retries - 1) {
           const delay = (attempt + 1) * 3000;
+          console.log(`[Aggregator] chain=${chainId} all 429, retrying in ${delay / 1000}s`);
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
+        console.log(`[Aggregator] chain=${chainId} ${src}->${dst} failed: ${reasons}`);
         return null;
       }
     }
