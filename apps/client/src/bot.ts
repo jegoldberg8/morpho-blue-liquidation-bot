@@ -148,14 +148,14 @@ export class LiquidationBot {
     }
     if (!this.checkCooldown(marketId, position.user)) return;
 
-    // Skip dust positions using cached prices (no external calls)
+    // Skip positions where collateral token has no known price (junk/test tokens)
+    // and skip dust positions under minCollateralUsd
+    const cachedPrice = priceCache.getPrice(this.chainId, marketParams.collateralToken);
+    if (cachedPrice === undefined) return;
     if (this.minCollateralUsd > 0) {
-      const cachedPrice = priceCache.getPrice(this.chainId, marketParams.collateralToken);
-      if (cachedPrice !== undefined) {
-        const decimals = priceCache.getDecimals(this.chainId, marketParams.collateralToken);
-        const collateralUsd = parseFloat(formatUnits(seizableCollateral, decimals)) * cachedPrice;
-        if (collateralUsd < this.minCollateralUsd) return;
-      }
+      const decimals = priceCache.getDecimals(this.chainId, marketParams.collateralToken);
+      const collateralUsd = parseFloat(formatUnits(seizableCollateral, decimals)) * cachedPrice;
+      if (collateralUsd < this.minCollateralUsd) return;
     }
 
     console.log(
