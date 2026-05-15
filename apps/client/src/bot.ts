@@ -240,6 +240,11 @@ export class LiquidationBot {
       }
     } catch (error) {
       console.error(`${this.logTag}Failed to liquidate ${position.user} on ${marketId}`, error);
+      this.positionLiquidationCooldownMechanism?.cooldownPosition(
+        marketId,
+        position.user,
+        seizableCollateral,
+      );
     }
   }
 
